@@ -36,16 +36,16 @@ VERSION = "0.1.0-alpha"
 import pygame
 import os
 
-from ImageServer import *
+from rugivi.ImageServer import *
 
-
+from rugivi import dir_helper
 
 class FapTables:
 
 
 	def getAllSubDirs(self,path):
 		subdirs = []
-		for root,d_names,f_names in os.walk(path):
+		for root,d_names,f_names in os.walk(dir_helper.expandHomeDir(path)):
 			for d_name in d_names:
 				subdirs.append(os.path.join(root,d_name))
 			break
@@ -68,8 +68,9 @@ class FapTables:
 
 		parentDirs = self.configParser.items("fapTableParentDirs")
 		for parentDir in parentDirs:
-			#print("Scanning", parentDir)
+			print("Scanning", parentDir[1])
 			subDirs = self.getAllSubDirs(parentDir[1])
+			print("   Subdirs:"+str(subDirs))
 			subDirs.sort()
 			self.fapTables.append(subDirs)
 			self.fapTablesPos.append(len(subDirs)-1)
@@ -89,7 +90,7 @@ class FapTables:
 
 	def getCurrentFapTableDir(self):
 		#print("current ft dir"+str(self.fapTables[self.y][self.x]))
-
+		print("X=",self.x,"Y=",self.y)
 		return self.fapTables[self.y][self.x]
 
 

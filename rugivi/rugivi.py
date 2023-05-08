@@ -10,8 +10,6 @@
 ##############################################################################################
 #
 VERSION = "0.1.0-alpha"
-#INSTALLDIR="/opt/rugivi" # TODO activate
-INSTALLDIR="."
 #
 ##############################################################################################
 #
@@ -39,6 +37,7 @@ INSTALLDIR="."
 import os
 import sys
 
+
 # Import pygame, hide welcome message because it messes with
 # status output
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
@@ -55,18 +54,19 @@ import math
 import psutil # TODO needs  pip install psutil
 import random
 
-from ImageServer import *
-from Status import *
-from World import *
+
+from rugivi.ImageServer import *
+from rugivi.Status import *
+from rugivi.World import *
 #from Crawler_Simple import *
-from Crawler_Persistent import *
-from Dialogs import *
-from View import *
-from FapTableManager import *
-from FapTableView import *
-from FapTable import *
-from FapTables import *
-from Selection import *
+from rugivi.Crawler_Persistent import *
+from rugivi.Dialogs import *
+from rugivi.View import *
+from rugivi.FapTableManager import *
+from rugivi.FapTableView import *
+from rugivi.FapTable import *
+from rugivi.FapTables import *
+from rugivi.Selection import *
 #from InodeDatabase import *
 
 import platform
@@ -74,8 +74,20 @@ import subprocess
 
 import getopt	# commandline arg handler
 
-from ConfigParser import *
+import tkinter
+from tkinter import messagebox
 
+# TODO remove
+# surpress libtiff warnings when handling tiffs (on Windows every warning is a seperate message box...)
+#import libtiff
+#libtiff.libtiff_ctypes.suppress_warnings()
+#import warnings
+#warnings.filterwarnings("ignore", message=".*RichTIFFIPTC")
+#warnings.filterwarnings("ignore", message=".*encountered")
+
+#from rugivi.config_file_handler import *
+from rugivi import config_file_handler as config_file_handler
+from rugivi import dir_helper as dir_helper
 
 
 
@@ -92,7 +104,6 @@ class App:
 		self.display = None
 		self.running = False
 		self.imageServer = None
-		self.showInfo = 2
 		#self.iNodeDatabase = None
 
 		self.worldDbFile = "chunks.sqlite"
@@ -101,14 +112,32 @@ class App:
 		self.crawlDir = "."
 		self.tagDir = ""
 
+		#self.configParser = ConfigParser()
 
-		self.configParser = ConfigParser()
+		self.configDir = dir_helper.getConfigDir("RuGiVi")
+		self.configParser = config_file_handler.FapelSystemConfigFile(os.path.join(self.configDir,"rugivi.conf"))
+		#homedir = dir_helper.getHomeDir()
+
+
+
+		self.configured = self.configParser.getBoolean("configuration","configured")
+
+		if not self.configured:
+			root = tkinter.Tk()
+			root.withdraw()
+			messagebox.showinfo("Not configured","Please configure RuGiVi with the RuGiVi Configurator before running it")
+			sys.exit(0)
+
 
 		self.worldDbFile = self.configParser.getDir("world","worldDB", self.worldDbFile)
 		self.thumbDbFile = self.configParser.getDir("thumbs","thumbDB", self.thumbDbFile)
 		self.crawlDir = self.configParser.getDir("world","crawlerRootDir", self.crawlDir)
 		#self.iNodeDbFile = self.configParser.getDir("tags","inodesDB", self.iNodeDbFile)
 		#self.tagDir = self.configParser.getDir("tags","tagDir", self.tagDir)
+
+
+		self.showInfo = self.configParser.getInt("control","showinfo")
+
 
 
 		self.fapTables = FapTables(self.configParser)
@@ -191,7 +220,7 @@ class App:
 
 		pygame.display.set_caption("RuGiVi")
 
-		icon = pygame.image.load('icon.png')
+		icon = pygame.image.load(dir_helper.getInstallDir()+'/icon.png')
 		pygame.display.set_icon(icon)
 
 
@@ -236,6 +265,8 @@ class App:
 
 
 		status = Status(self.configParser.getInt("fonts","statusFontSize"))
+		python_executable = self.configParser.get("control","pythonexecutable")
+
 
 
 		#print("creating cat jobs")
@@ -579,10 +610,14 @@ class App:
 							self.open_file(view.selection.getSelectedFile())
 					elif event.key == pygame.K_t:
 						if view.selection.getSelectedFile() != None:
-							subprocess.Popen(["python3","/opt/fapelsystem/fapel_tagger.py", view.selection.getSelectedFile()]) 
+							fapelsystemDir = dir_helper.getModuleDir("fapelsystem")
+							if fapelsystemDir != None:
+								subprocess.Popen([python_executable,fapelsystemDir + "/fapel_tagger.py", view.selection.getSelectedFile()])
 					elif event.key == pygame.K_s:
 						if view.selection.getSelectedFile() != None:
-							subprocess.Popen(["python3","/opt/fapelsystem/fapel_fap_set.py", view.selection.getSelectedFile()]) 
+							fapelsystemDir = dir_helper.getModuleDir("fapelsystem")
+							if fapelsystemDir != None:
+								subprocess.Popen([python_executable,fapelsystemDir + "/fapel_fap_set.py", view.selection.getSelectedFile()])
 					elif event.key == pygame.K_LEFT:
 						self.fapTables.switchPrevious()
 						currentFapTable = self.fapTableManager.getFapTableByDir(self.fapTables.getCurrentFapTableDir())
@@ -730,7 +765,10 @@ class App:
 					status.writeln("World loaded: Chunks: "+str(self.world.countChunksInMemory())+" Frames: "+str(self.world.countFrames()))
 					status.writeln("Crawler Status: "+self.crawler.status)
 					status.writeln("Crawler Dir: "+self.crawler.currentDir)
-				status.writeln("Selected Image: "+view.selection.getSelectedFile())
+				if view.selection.getSelectedFile() != None:
+					status.writeln("Selected Image: "+view.selection.getSelectedFile())
+				else:
+					status.writeln("Selected Image: -none-")
 				status.writeln("Queue: "+str(self.imageServer.getQueueSize()))
 				if (self.showInfo > 1):
 					status.writeln("")
@@ -794,4 +832,7 @@ if __name__ == "__main__":
 	app.run()
 
 
+def main():
+	app = App()
+	app.run()
 

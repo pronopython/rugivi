@@ -34,7 +34,7 @@ VERSION = "0.1.0-alpha"
 #
 
 import pygame
-from ImageServer import *
+from rugivi.ImageServer import *
 
 
 class FapTableView:

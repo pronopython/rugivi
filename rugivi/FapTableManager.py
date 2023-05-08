@@ -38,8 +38,8 @@ from pygame.locals import *
 import threading
 from time import sleep,time
 
-from ThreadSafeList import *
-from FapTable import *
+from rugivi.ThreadSafeList import *
+from rugivi.FapTable import *
 import random
 from pathlib import Path
 import json
@@ -199,7 +199,7 @@ class FapTableManager:
 									newFiles.append(f_name)
 
 							if len(newFiles) > 0 or len(previousCards) > 0:
-								print("Syncing FT: "+fapTable.tableDir + " adding "+str(len(newFiles))+" and removing "+str(len(previousCards)))
+								print("Syncing FT: "+str(fapTable.tableDir) + " adding "+str(len(newFiles))+" and removing "+str(len(previousCards)))
 								fapTable.statusSync = FapTable.STATUS_CHANGED
 
 							# add new cards

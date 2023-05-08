@@ -2,18 +2,19 @@
 #
 ##############################################################################################
 #
-# RuGiVi - Adult Media Landscape Browser
+# The fapel system organizes image and video collections under Linux with standard folders.
 #
 # For updates see git-repo at
-# https://github.com/pronopython/rugivi
+#https://github.com/pronopython/fapel-system
 #
 ##############################################################################################
 #
-VERSION = "0.1.0-alpha"
+VERSION = "0.2.0" #TODO
+CONFIGFILE="~/.config/fapel_system.conf"
 #
 ##############################################################################################
 #
-# Copyright (C) 2023 PronoPython
+# Copyright (C) 2022-2023 PronoPython
 #
 # Contact me at pronopython@proton.me
 #
@@ -32,10 +33,11 @@ VERSION = "0.1.0-alpha"
 #
 ##############################################################################################
 #
-
 import os
 from pathlib import Path
-
+import configparser
+import platform
+import importlib
 
 
 def getHomeDir():
@@ -58,4 +60,32 @@ def getLastPartOfFilename(path):
 			counterKey = last2
 	return counterKey
 
+OS_LINUX = "Linux"
+OS_WINDOWS = "Windows"
+OS_MACOS = "Darwin"
+
+def getOS():
+	return platform.system()
+
+
+def getConfigDir(subfolderForWindows):
+	configDir = ""
+	myos = getOS()
+	if myos == OS_LINUX or myos == OS_MACOS:
+		configDir = os.path.join(getHomeDir(),".config")
+	elif myos == OS_WINDOWS:
+		configDir = os.path.join(os.environ['APPDATA'], subfolderForWindows)
+	return configDir
+
+def getInstallDir():
+	return os.path.dirname(os.path.realpath(__file__))
+
+
+def getModuleDir(module):
+	#return importlib.machinery.PathFinder().find_module(module).get_filename()
+	moduleSpec = importlib.machinery.PathFinder().find_spec(module)
+	if moduleSpec != None:
+		return moduleSpec.submodule_search_locations[0]
+	else:
+		return None
 

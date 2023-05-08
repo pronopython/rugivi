@@ -41,8 +41,8 @@ from pathlib import Path
 from functools import reduce
 
 
-from ImageServer import *
-from World import *
+from rugivi.ImageServer import *
+from rugivi.World import *
 
 from sqlitedict import SqliteDict
 

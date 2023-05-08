@@ -1,21 +1,15 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 #
 ##############################################################################################
 #
-# RuGiVi - Adult Media Landscape Browser
+# The fapel system organizes image and video collections under Linux with standard folders.
 #
 # For updates see git-repo at
-# https://github.com/pronopython/rugivi
+#https://github.com/pronopython/fapel-system
 #
 ##############################################################################################
 #
-VERSION = "0.1.0-alpha"
-#CONFIGFILE="~/.config/rugivi.conf" TODO set alive
-CONFIGFILE="rugivi.conf"
-#
-##############################################################################################
-#
-# Copyright (C) 2023 PronoPython
+# Copyright (C) 2022-2023 PronoPython
 #
 # Contact me at pronopython@proton.me
 #
@@ -37,24 +31,21 @@ CONFIGFILE="rugivi.conf"
 import os
 from pathlib import Path
 import configparser
-from DirHelper import *
+from . import dir_helper as dir_helper
 
 
 ##############################################################################################
 #Load Config
 ##############################################################################################
 
-class ConfigParser:
+class FapelSystemConfigFile:
 
 	
-	def __init__(self):
-		global CONFIGFILE
-		self.configFilePath = CONFIGFILE
+	def __init__(self, configFilePath):
+		self.configFilePath = configFilePath
 
-		self.homedir = getHomeDir()
-		self.configFilePath = expandHomeDir(CONFIGFILE)
-
-
+		self.homedir = dir_helper.getHomeDir()
+		self.configFilePath = dir_helper.expandHomeDir(self.configFilePath)
 
 		self.createConfigParserAndLoadConfig()
 		self.configChanged = False
@@ -65,7 +56,6 @@ class ConfigParser:
 		if (os.path.isfile(self.configFilePath)):
 			self.configParser = configparser.RawConfigParser(allow_no_value=True)
 			self.configParser.read(self.configFilePath)
-			#print(self.configParser.get('dirs','tagDir'))
 		else:
 			print("Config file is missing, abort!")
 			exit()

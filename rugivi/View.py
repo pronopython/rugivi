@@ -35,9 +35,9 @@ VERSION = "0.1.0-alpha"
 
 import pygame
 
-from World import *
-from ImageServer import *
-from Selection import *
+from rugivi.World import *
+from rugivi.ImageServer import *
+from rugivi.Selection import *
 import random
 from time import time_ns
 

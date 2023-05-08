@@ -38,9 +38,9 @@ from pygame.locals import *
 import threading
 from time import sleep,time
 from queue import Queue
-from ThreadSafeList import *
-from World import *
-from ImageServerDatabase import *
+from rugivi.ThreadSafeList import *
+from rugivi.World import *
+from rugivi.ImageServerDatabase import *
 
 
 class StreamedImage:

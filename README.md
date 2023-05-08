@@ -63,7 +63,7 @@ The pattern like structure between pictures and red empty spots on the right is 
 * Thumbnails are cached in a database
 * Works together with the [Fapel-System](https://github.com/pronopython/fapel-system)
 * Uses PyGame to render everything
-* With some tweaks it should work under Windows and MacOS (but was not tested)
+* With some tweaks it should work under MacOS (but was not tested)
 
 
 

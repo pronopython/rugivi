@@ -9,15 +9,11 @@
 #
 ##############################################################################################
 #
-VERSION = "0.1.0-alpha"
-#
-##############################################################################################
-#
-# Copyright (C) 2023 PronoPython
+# Copyright (C) PronoPython
 #
 # Contact me at pronopython@proton.me
 #
-# This program is free software: you can redistribute it and/or modify it 
+# This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
 # Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
@@ -33,788 +29,809 @@ VERSION = "0.1.0-alpha"
 ##############################################################################################
 #
 
-
 import os
 import sys
 
 
 # Import pygame, hide welcome message because it messes with
 # status output
-os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
+
+from rugivi.crawlers.first_organic.organic_crawler_first_edition import (
+	OrganicCrawlerFirstEdition,
+)
+
+
 import pygame
-from pygame.locals import *
 
-
-import threading
 from time import sleep
-from time import time_ns
-from queue import Queue
-#from PIL import Image
+
 import math
-import psutil # TODO needs  pip install psutil
+import psutil
 import random
 
+from rugivi.image_service.image_server import *
+from rugivi.image_service.streamed_image import StreamedImage
 
-from rugivi.ImageServer import *
-from rugivi.Status import *
-from rugivi.World import *
-#from Crawler_Simple import *
-from rugivi.Crawler_Persistent import *
-from rugivi.Dialogs import *
-from rugivi.View import *
-from rugivi.FapTableManager import *
-from rugivi.FapTableView import *
-from rugivi.FapTable import *
-from rugivi.FapTables import *
-from rugivi.Selection import *
-#from InodeDatabase import *
+from rugivi.status import *
+from rugivi.world_things.world import *
+
+from rugivi.world_database_service.world_database import *
+from rugivi.dialogs import *
+from rugivi.view import *
+from rugivi.fap_table.fap_table_manager import *
+from rugivi.fap_table.fap_table_view import *
+from rugivi.fap_table.fap_table import *
+from rugivi.fap_table.fap_tables import *
+from rugivi.selection import *
+from rugivi.exports.world_overlook import WorldOverlook
 
 import platform
 import subprocess
 
-import getopt	# commandline arg handler
+import getopt  # commandline arg handler
 
 import tkinter
 from tkinter import messagebox
 
-# TODO remove
-# surpress libtiff warnings when handling tiffs (on Windows every warning is a seperate message box...)
-#import libtiff
-#libtiff.libtiff_ctypes.suppress_warnings()
-#import warnings
-#warnings.filterwarnings("ignore", message=".*RichTIFFIPTC")
-#warnings.filterwarnings("ignore", message=".*encountered")
-
-#from rugivi.config_file_handler import *
 from rugivi import config_file_handler as config_file_handler
 from rugivi import dir_helper as dir_helper
 
 
-
-class App:
+class RugiviMainApp:
 
 	DOUBLECLICKTIME = 500
 
+	# Maximum possible jump distance is: +/- JUMP_NUMBER_OF_SUBMOVES * JUMP_SUBMOVE_DISTANCE_S for x and y
+	JUMP_NUMBER_OF_SUBMOVES = 20
+	JUMP_SUBMOVE_DISTANCE_S = 100
 
-
-
-
-	def __init__(self):
-		self.size = self.weight, self.heigth = 640,480 # TODO "height" results in segmentation fault errors... because... dunno
+	def __init__(self) -> None:
+		self.size = self.weight, self.heigth = (
+			640,
+			480,
+		)
 		self.display = None
 		self.running = False
-		self.imageServer = None
-		#self.iNodeDatabase = None
+		self.image_server = None
 
 		self.worldDbFile = "chunks.sqlite"
 		self.thumbDbFile = "thumbs.sqlite"
-		self.iNodeDbFile = "inodes.sqlite"
 		self.crawlDir = "."
 		self.tagDir = ""
 
-		#self.configParser = ConfigParser()
+		self.configDir = dir_helper.get_config_dir("RuGiVi")
+		self.configParser = config_file_handler.ConfigFileHandler(
+			os.path.join(self.configDir, "rugivi.conf")
+		)
 
-		self.configDir = dir_helper.getConfigDir("RuGiVi")
-		self.configParser = config_file_handler.FapelSystemConfigFile(os.path.join(self.configDir,"rugivi.conf"))
-		#homedir = dir_helper.getHomeDir()
-
-
-
-		self.configured = self.configParser.getBoolean("configuration","configured")
+		self.configured = self.configParser.get_boolean("configuration", "configured")
 
 		if not self.configured:
 			root = tkinter.Tk()
 			root.withdraw()
-			messagebox.showinfo("Not configured","Please configure RuGiVi with the RuGiVi Configurator before running it")
+			messagebox.showinfo(
+				"Not configured",
+				"Please configure RuGiVi with the RuGiVi Configurator before running it",
+			)
 			sys.exit(0)
 
+		self.worldDbFile = self.configParser.get_directory_path(
+			"world", "worldDB", self.worldDbFile
+		)
+		self.thumbDbFile = self.configParser.get_directory_path(
+			"thumbs", "thumbDB", self.thumbDbFile
+		)
+		self.crawlDir = self.configParser.get_directory_path(
+			"world", "crawlerRootDir", self.crawlDir
+		)
 
-		self.worldDbFile = self.configParser.getDir("world","worldDB", self.worldDbFile)
-		self.thumbDbFile = self.configParser.getDir("thumbs","thumbDB", self.thumbDbFile)
-		self.crawlDir = self.configParser.getDir("world","crawlerRootDir", self.crawlDir)
-		#self.iNodeDbFile = self.configParser.getDir("tags","inodesDB", self.iNodeDbFile)
-		#self.tagDir = self.configParser.getDir("tags","tagDir", self.tagDir)
-
-
-		self.showInfo = self.configParser.getInt("control","showinfo")
-
-
+		self.show_info = self.configParser.get_int("control", "showinfo")
 
 		self.fapTables = FapTables(self.configParser)
 
-		'''
-		fapTables = [None]
-		parentDirs = self.configParser.items("fapTableParentDirs")
-		for parentDir in parentDirs:
-			subDirs = self.getAllSubDirs(parentDir[0])
-			fapTables.append(subDirs)
-
-		singleDirsCnf = self.configParser.items("fapTableSingleDirs")
-		singleDirs = []
-		for singleDir in singleDirsCnf:
-			singleDirs.append(singleDir[0])
-		fapTables.append(singleDirs)
-		print(fapTables)
-		'''
-
-
 		self.parseCommandlineArgs()
 
+		print("World DB  :", self.worldDbFile)
+		print("Thumbs DB :", self.thumbDbFile)
+		print("Crawl root:", self.crawlDir)
 
-		print("World DB  :",self.worldDbFile)
-		print("Thumbs DB :",self.thumbDbFile)
-		print("Crawl root:",self.crawlDir)
-
-
-		if self.configParser.getBoolean("control","reverseScrollWheelZoom"):
+		if self.configParser.get_boolean("control", "reverseScrollWheelZoom"):
 			self.zoomDirection = -1
 		else:
 			self.zoomDirection = 1
 
-
-	def parseCommandlineArgs(self):
-
-		#if len(sys.argv) < 2:
-		#	print("Please specifiy dir to crawl") # TODO better help
-		#	sys.exit(2)
-		#elif len(sys.argv) == 2:
-		#	self.crawlDir = str(sys.argv[1])
-		#else:
+	def parseCommandlineArgs(self) -> None:
 		try:
-			options, args = getopt.getopt(sys.argv[1:],"?hc:",["thumb-db=","world-db="])
+			options, args = getopt.getopt(
+				sys.argv[1:], "?hc:", ["thumb-db=", "world-db="]
+			)
 		except getopt.GetoptError:
 			print("Wrong parameters")
 			# TODO show help
 			sys.exit(2)
 
-
 		for opt, arg in options:
-			if (opt == '-h') or (opt == '-?'):
+			if (opt == "-h") or (opt == "-?"):
 				# TODO add some help...
 				sys.exit(2)
-			elif opt == '-c':
+			elif opt == "-c":
 				self.crawlDir = str(arg)
-			elif opt == '--thumb-db':
+			elif opt == "--thumb-db":
 				self.thumbDbFile = str(arg)
-			elif opt == '--world-db':
+			elif opt == "--world-db":
 				self.worldDbFile = str(arg)
 
-
-
-	def open_file(self,path):
+	def open_file(self, path) -> None:
 		if platform.system() == "Windows":
-			os.startfile(path)
+			os.startfile(path)  # type: ignore
 		elif platform.system() == "Darwin":
 			subprocess.Popen(["open", path])
 		else:
 			subprocess.Popen(["xdg-open", path])
 
-
-
-
-	def run(self):
-
+	def run(self) -> NoReturn:
 
 		pygame.init()
 
-
 		pygame.display.set_caption("RuGiVi")
 
-		icon = pygame.image.load(dir_helper.getInstallDir()+'/icon.png')
+		icon = pygame.image.load(dir_helper.get_install_dir() + "/icon.png")
 		pygame.display.set_icon(icon)
 
+		self.display = pygame.display.set_mode(
+			self.size, pygame.RESIZABLE | pygame.HWSURFACE | pygame.DOUBLEBUF
+		)
 
-		#self.display = pygame.display.set_mode(self.size, pygame.HWSURFACE | pygame.DOUBLEBUF)
-		self.display = pygame.display.set_mode(self.size, pygame.RESIZABLE | pygame.HWSURFACE | pygame.DOUBLEBUF)
+		self.image_server = ImageServer(32, self.thumbDbFile)
 
-		self.imageServer = ImageServer(16, self.thumbDbFile)
-		#window = pygame._sdl2.Window.from_display_module()
-
-		#window.maximize()
 		self.world = World()
 
-		self.fapTableManager = FapTableManager(self.imageServer)
+		self.fap_table_manager = FapTableManager(self.image_server)
 
 		clock = pygame.time.Clock()
 
+		initial_height = (
+			World.SPOT_SIZE
+			/ ImageServer.QUALITY_PIXEL_SIZE[StreamedImage.QUALITY_THUMB]
+		)
+		view = View(self.world, initial_height)
 
+		fap_table_view = FapTableView()
 
-		view = View(self.world)
+		current_fap_table: FapTable = None  # type: ignore
 
-		fapTableView = FapTableView()
-		
-		#currentFapTable = self.fapTableManager.openFapTable("./Fapsets/20220624")
-		for ftdir in self.fapTables.fapTablesFlat:
-			currentFapTable = self.fapTableManager.openFapTable(ftdir)
-		#currentFapTable = self.fapTableManager.openFapTableParentDir("./../../fapelsystem/Fapsets")
+		for fap_table_dir in self.fapTables.fap_tables_flat:
+			current_fap_table = self.fap_table_manager.open_fap_table(fap_table_dir)
 
-		currentFapTable = self.fapTableManager.getFapTableByDir(self.fapTables.getCurrentFapTableDir())
-		fapTableView.setCurrentFapTable(currentFapTable)
+		current_fap_table = self.fap_table_manager.get_fap_table_by_dir(
+			self.fapTables.get_current_fap_table_dir()
+		)
+		fap_table_view.set_current_fap_table(current_fap_table)
 
-		self.imageServer.addView(view)
-		self.imageServer.addFapTableView(fapTableView)
+		self.image_server.add_view(view)
+		self.image_server.add_faptable_view(fap_table_view)
 
+		move_view = False
+		view_moved = False
 
-		moveview = False
-		viewmoved = False
+		move_card = False
+		card_moved = False
+		current_edit_card = None
+		card_resize_mode = False
 
-		movecard = False
-		cardmoved = False
-		currentEditCard = None
-		cardResizeMode = False
-
-
-		status = Status(self.configParser.getInt("fonts","statusFontSize"))
-		python_executable = self.configParser.get("control","pythonexecutable")
-
-
-
-		#print("creating cat jobs")
-
-		#nox = 240
-		#noy = 130
-		#for i in range(0,nox*noy):
-			#view.manycats.append(self.imageServer.createStreamedImage("examplepics/sophiscated_cat.PNG", StreamedImage.QUALITY_GRID))
-
-		'''
-		sx = 0
-		sy = 0
-		sx_max = 240
-		sy_max = 130
-		for root,d_names,f_names in os.walk("PROV"):
-			for f in f_names:
-				p = os.path.join(root, f)
-				si = self.imageServer.createStreamedImage(p, StreamedImage.QUALITY_GRID)
-				view.manycats.append(si)
-				self.world.setFrameAt_S(Frame(si),sx,sy)
-				sx += 1
-				if sx > sx_max:
-					sx = 0
-					sy += 1
-				if sy > sy_max:
-					break
-			if sy > sy_max:
-				break
-			#if len(view.manycats) > 240*130:
-			#	break
-
-
-		print("Chunks loaded:",self.world.countChunksInMemory())
-		'''
-
-
-
-		#print("jobs created")
+		status = Status(self.configParser.get_int("fonts", "statusFontSize"))
+		python_executable = self.configParser.get(
+			"control", "pythonexecutable"
+		)  # to start Fapel System components
 
 		path = self.crawlDir
 
-
-
-		#if len(sys.argv) > 1:
-		#	path = sys.argv[1]
-		crawlerSkipFiles = 0 # TODO remove
-		#if len(sys.argv) > 2:
-		#	crawlerSkipFiles = int(sys.argv[2])
-
-
-
-		#self.crawler = Crawler_Simple(self.world, self.imageServer,path, crawlerSkipFiles)
-		self.crawler = Crawler_Persistent(self.world, self.imageServer,path, self.worldDbFile, crawlerSkipFiles)
+		self.crawler = OrganicCrawlerFirstEdition(
+			self.world, self.image_server, path, self.worldDbFile
+		)
 		self.crawler.run()
 
-
-		#self.iNodeDatabase = InodeDatabase(self.iNodeDbFile)
-		#if self.tagDir != "":
-		#	self.iNodeDatabase.addDir(self.tagDir)
-		#self.iNodeDatabase.addDir(self.crawlDir)
-
-		#self.iNodeDatabase.run()
-
-
-		self.imageServer.start()
-
-		print("Queue Size:",self.imageServer.jobQueue.qsize())
+		self.image_server.start()
 
 		self.running = True
 
-		#fileUnderCenter = ""
+		view_w_old_PL = -1
+		view_h_old_PL = -1
 
+		xy_dialog = None
 
-		view_w_old = -1
-		view_h_old = -1
+		doubleclick_clock = pygame.time.Clock()  # clock for doubleclick left
+		selection_clock = pygame.time.Clock()  # clock for last willfull selection click
+		selection_clock_click_done = False
 
-		xyDialog = None
+		self.world_overlook = None
+		self.save_dialog = None
 
-		dbclock = pygame.time.Clock() # clock for doubleclick left
-		selectionclock = pygame.time.Clock() # clock for last willfull selection click
-		selectionclockClickDone = False
-
-
-
-		#smlsurf = pygame.Surface((320,200)) # TODO 8 bit test
-		#pali = pygame.image.load("cranes.gif")
-
-		while (self.running):
-
-
-
-			#self.display.fill((0,0,0))
-
+		while self.running:
 			info = pygame.display.Info()
-			view_w,view_h = info.current_w,info.current_h
+			view_w_PL, view_h_PL = info.current_w, info.current_h
 
 			redraw = False
-
-
 
 			for event in pygame.event.get():
 				if event.type == pygame.QUIT:
 
 					self.running = False
 
-
-				if fapTableView.editModeEnabled:
-					if event.type == pygame.MOUSEMOTION and movecard:
+				if fap_table_view.edit_mode_enabled:
+					if event.type == pygame.MOUSEMOTION and move_card:
 						motion = pygame.mouse.get_rel()
-						#print(motion)
-						#view.worldx = view.worldx - int(motion[0]*view.height)
-						#view.worldy = view.worldy - int(motion[1]*view.height)
-						#view.redraw = True
-						if currentEditCard != None:
-							card = currentEditCard
+						if current_edit_card != None:
+							card = current_edit_card
 						else:
-							card = fapTableView.getCardAtPixelPos(pygame.mouse.get_pos()[0],pygame.mouse.get_pos()[1])
-							currentEditCard = card
+							card = fap_table_view.get_card_at_pixel_pos(
+								pygame.mouse.get_pos()[0], pygame.mouse.get_pos()[1]
+							)
+							current_edit_card = card
 							if card != None:
-								if fapTableView.isCardLowerCorner(card,pygame.mouse.get_pos()[0],pygame.mouse.get_pos()[1]):
-									cardResizeMode = True
+								if fap_table_view.is_card_lower_corner(
+									card,
+									pygame.mouse.get_pos()[0],
+									pygame.mouse.get_pos()[1],
+								):
+									card_resize_mode = True
 						if card != None:
-							#print(card.imagePath)
-							currentFapTable.statusSync = FapTable.STATUS_CHANGED
-							if cardResizeMode:
-								width = card.width + (motion[0]*fapTableView.cardStepPerPixel)
+							current_fap_table.status_sync = FapTable.STATUS_CHANGED
+							if card_resize_mode:
+								width = card.width + (
+									motion[0] * fap_table_view.card_step_per_pixel
+								)
 								if width >= FapTableCard.CARD_MINIMUM_SIZE:
 									card.width = width
 							else:
-								card.x = card.x + (motion[0]*fapTableView.cardStepPerPixel)
-								card.y = card.y + (motion[1]*fapTableView.cardStepPerPixel)
-						cardmoved = True
+								card.x = card.x + (
+									motion[0] * fap_table_view.card_step_per_pixel
+								)
+								card.y = card.y + (
+									motion[1] * fap_table_view.card_step_per_pixel
+								)
+						card_moved = True
 						redraw = True
 
 					elif event.type == pygame.MOUSEBUTTONDOWN:
 						if event.button == 1:
 
-							if dbclock.tick() < App.DOUBLECLICKTIME:
-								#print("double click detected!")
-								#view.selection.peekEnabled = not view.selection.peekEnabled
+							if doubleclick_clock.tick() < RugiviMainApp.DOUBLECLICKTIME:
 								pass
 
-
-							motion = pygame.mouse.get_rel() # clear relative movement
-							movecard = True
+							motion = pygame.mouse.get_rel()  # clear relative movement
+							move_card = True
 
 						elif event.button == 2:
-							fapTableView.editModeEnabled = False
+							fap_table_view.edit_mode_enabled = False
 							redraw = True
 
 					elif event.type == pygame.MOUSEBUTTONUP:
 						if event.button == 1:
-							movecard = False
-							if cardmoved:
-								cardmoved = False
-								currentEditCard = None
-								cardResizeMode = False
+							move_card = False
+							if card_moved:
+								card_moved = False
+								current_edit_card = None
+								card_resize_mode = False
 							else:
-								# select clicked spot
 								pass
-								#clickx = view.worldx + int((pygame.mouse.get_pos()[0]-int(view_w/2))*view.height)
-								#clicky = view.worldy + int((pygame.mouse.get_pos()[1]-int(view_h/2))*view.height)
-								#clickx_S = int(clickx / World.SPOT_SIZE)
-								#if clickx <
 
 				else:
-					if event.type == pygame.MOUSEMOTION and moveview:
+					if event.type == pygame.MOUSEMOTION and move_view:
 						motion = pygame.mouse.get_rel()
-						#print(motion)
-						view.worldx = view.worldx - int(motion[0]*view.height)
-						view.worldy = view.worldy - int(motion[1]*view.height)
-						#view.redraw = True
-						viewmoved = True
+						view.current_center_world_pos_x_P = (
+							view.current_center_world_pos_x_P
+							- int(motion[0] * view.height)
+						)
+						view.current_center_world_pos_y_P = (
+							view.current_center_world_pos_y_P
+							- int(motion[1] * view.height)
+						)
+						view_moved = True
 
 					elif event.type == pygame.MOUSEBUTTONDOWN:
-						#print('In the event loop:', event.pos, event.button)
 						if event.button == 1:
-
-							if dbclock.tick() < App.DOUBLECLICKTIME:
-								#print("double click detected!")
-								view.selection.peekEnabled = not view.selection.peekEnabled
-
-
-
-							motion = pygame.mouse.get_rel() # clear relative movement
-							moveview = True
+							if doubleclick_clock.tick() < RugiviMainApp.DOUBLECLICKTIME:
+								view.selection.peek_enabled = (
+									not view.selection.peek_enabled
+								)
+							motion = pygame.mouse.get_rel()  # clear relative movement
+							move_view = True
 						elif event.button == 3:
-						
-														# select clicked spot
-							clickx = view.worldx + int((pygame.mouse.get_pos()[0]-int(view_w/2))*view.height)
-							clicky = view.worldy + int((pygame.mouse.get_pos()[1]-int(view_h/2))*view.height)
-							clickx_S = int(clickx / World.SPOT_SIZE)
-							if clickx < 0:
-								clickx_S -= 1
-							clicky_S = int(clicky / World.SPOT_SIZE)
-							if clicky < 0:
-								clicky_S -= 1
-							view.selection.x_S = clickx_S
-							view.selection.y_S = clicky_S
-							view.selection.updateSelectedSpot()
+							# select clicked spot
+							click_x_P = view.current_center_world_pos_x_P + int(
+								(pygame.mouse.get_pos()[0] - int(view_w_PL / 2))
+								* view.height
+							)
+							click_y_P = view.current_center_world_pos_y_P + int(
+								(pygame.mouse.get_pos()[1] - int(view_h_PL / 2))
+								* view.height
+							)
+							clicked_spot_x_S = int(click_x_P / World.SPOT_SIZE)
+							if click_x_P < 0:
+								clicked_spot_x_S -= 1
+							clicked_spot_y_S = int(click_y_P / World.SPOT_SIZE)
+							if click_y_P < 0:
+								clicked_spot_y_S -= 1
+							view.selection.x_S = clicked_spot_x_S
+							view.selection.y_S = clicked_spot_y_S
+							view.selection.update_selected_spot()
 							redraw = True
 
-							selectionclock.tick()
-							selectionclockClickDone = True
-						
-						
-						
-						
-							view.worldx = view.worldx + int((pygame.mouse.get_pos()[0]-int(view_w/2))*view.height)
-							view.worldy = view.worldy + int((pygame.mouse.get_pos()[1]-int(view_h/2))*view.height)
-						elif event.button == 2:
-							#if view.selection.getSelectedFile() != None:
-								#subprocess.Popen(["python3","/opt/fapelsystem/fapel_tagger.py", view.selection.getSelectedFile()])
-							fapTableView.editModeEnabled = True
+							selection_clock.tick()
+							selection_clock_click_done = True
 
+							view.current_center_world_pos_x_P = (
+								view.current_center_world_pos_x_P
+								+ int(
+									(pygame.mouse.get_pos()[0] - int(view_w_PL / 2))
+									* view.height
+								)
+							)
+							view.current_center_world_pos_y_P = (
+								view.current_center_world_pos_y_P
+								+ int(
+									(pygame.mouse.get_pos()[1] - int(view_h_PL / 2))
+									* view.height
+								)
+							)
+						elif event.button == 2:
+							fap_table_view.edit_mode_enabled = True
 
 					elif event.type == pygame.MOUSEBUTTONUP:
 						if event.button == 1:
-							moveview = False
-							if viewmoved:
-								viewmoved = False
+							move_view = False
+							if view_moved:
+								view_moved = False
 							else:
 								# select clicked spot
-								clickx = view.worldx + int((pygame.mouse.get_pos()[0]-int(view_w/2))*view.height)
-								clicky = view.worldy + int((pygame.mouse.get_pos()[1]-int(view_h/2))*view.height)
-								clickx_S = int(clickx / World.SPOT_SIZE)
-								if clickx < 0:
-									clickx_S -= 1
-								clicky_S = int(clicky / World.SPOT_SIZE)
-								if clicky < 0:
-									clicky_S -= 1
-								view.selection.x_S = clickx_S
-								view.selection.y_S = clicky_S
-								view.selection.updateSelectedSpot()
+								click_x_P = view.current_center_world_pos_x_P + int(
+									(pygame.mouse.get_pos()[0] - int(view_w_PL / 2))
+									* view.height
+								)
+								click_y_P = view.current_center_world_pos_y_P + int(
+									(pygame.mouse.get_pos()[1] - int(view_h_PL / 2))
+									* view.height
+								)
+								clicked_spot_x_S = int(click_x_P / World.SPOT_SIZE)
+								if click_x_P < 0:
+									clicked_spot_x_S -= 1
+								clicked_spot_y_S = int(click_y_P / World.SPOT_SIZE)
+								if click_y_P < 0:
+									clicked_spot_y_S -= 1
+								view.selection.x_S = clicked_spot_x_S
+								view.selection.y_S = clicked_spot_y_S
+								view.selection.update_selected_spot()
 								redraw = True
 
-								selectionclock.tick()
-								selectionclockClickDone = True
+								selection_clock.tick()
+								selection_clock_click_done = True
 
-
-
-					elif event.type == MOUSEWHEEL:
-						#print(event)
-						#print(event.x, event.y)
-						#print(event.flipped)
+					elif event.type == pygame.MOUSEWHEEL:
 						if event.y != 0:
-							#view.height = view.height - (event.y*0.04)
-							#view.height = view.height - (event.y*0.12)
-							#view.height = view.height - (event.y*0.15*(1+(16*(view.height/600))))
-
 							if event.y * self.zoomDirection > 0:
-								view.height = view.height / (1.2 + ((view.height / 20) * 0.1))
+								view.height = view.height / (
+									1.2 + ((view.height / 20) * 0.1)
+								)
 
-								if selectionclock.tick() > 500:
-									selectionclockClickDone = False
+								if selection_clock.tick() > 500:
+									selection_clock_click_done = False
 
-								if ((World.SPOT_SIZE / view.height < view_h * 0.3) and (World.SPOT_SIZE / view.height < view_w * 0.3)) or selectionclockClickDone:
-
+								if (
+									(World.SPOT_SIZE / view.height < view_h_PL * 0.3)
+									and (
+										World.SPOT_SIZE / view.height < view_w_PL * 0.3
+									)
+								) or selection_clock_click_done:
 									# move view further to the selection when zooming in
-									selx = int(view.selection.x_S * World.SPOT_SIZE + (World.SPOT_SIZE / 2))
-									sely = int(view.selection.y_S * World.SPOT_SIZE + (World.SPOT_SIZE / 2))
-									if view.selection.x_S != view.worldx / World.SPOT_SIZE or view.selection.y_S != view.worldy / World.SPOT_SIZE:
-										distx = int((selx - view.worldx) / (1 + (0.3 * (1 - (view.height / view.maxHeight)))))
-										disty = int((sely - view.worldy) / (1 + (0.3 * (1 - (view.height / view.maxHeight)))))
-										view.worldx = view.worldx + distx
-										view.worldy = view.worldy + disty
-
-
+									center_of_selection_x_P = int(
+										view.selection.x_S * World.SPOT_SIZE
+										+ (World.SPOT_SIZE / 2)
+									)
+									center_of_selection_y_P = int(
+										view.selection.y_S * World.SPOT_SIZE
+										+ (World.SPOT_SIZE / 2)
+									)
+									if (
+										view.selection.x_S
+										!= view.current_center_world_pos_x_P
+										/ World.SPOT_SIZE
+										or view.selection.y_S
+										!= view.current_center_world_pos_y_P
+										/ World.SPOT_SIZE
+									):
+										move_x_PL = int(
+											(
+												center_of_selection_x_P
+												- view.current_center_world_pos_x_P
+											)
+											/ (
+												1
+												+ (
+													0.3
+													* (
+														1
+														- (
+															view.height
+															/ view.max_height
+														)
+													)
+												)
+											)
+										)
+										move_y_PL = int(
+											(
+												center_of_selection_y_P
+												- view.current_center_world_pos_y_P
+											)
+											/ (
+												1
+												+ (
+													0.3
+													* (
+														1
+														- (
+															view.height
+															/ view.max_height
+														)
+													)
+												)
+											)
+										)
+										view.current_center_world_pos_x_P = (
+											view.current_center_world_pos_x_P
+											+ move_x_PL
+										)
+										view.current_center_world_pos_y_P = (
+											view.current_center_world_pos_y_P
+											+ move_y_PL
+										)
 
 							else:
-								view.height = view.height * (1.2 + ((view.height / 20) * 0.1))
+								view.height = view.height * (
+									1.2 + ((view.height / 20) * 0.1)
+								)
 
 							redraw = True
-							#view.height = view.height - (event.y*1.30*(1+(30*(view.height/100))))
+
 						if view.height < 1.0:
 							view.height = 1.0
-						if view.height > view.maxHeight:
-							view.height = view.maxHeight
-						#view.redraw = True
+						if view.height > view.max_height:
+							view.height = view.max_height
 
 				if event.type == pygame.KEYDOWN:
 					if event.key == pygame.K_1:
 						view.height = 1.0
 						redraw = True
 					elif event.key == pygame.K_2:
-						#view.height = 1.0 + (((World.SPOT_SIZE / self.imageServer.qualityPixelSizes[StreamedImage.QUALITY_GRID]) - 1.0) / 2)
-						view.height = World.SPOT_SIZE / self.imageServer.qualityPixelSizes[StreamedImage.QUALITY_SCREEN]
+						view.height = (
+							World.SPOT_SIZE
+							/ ImageServer.QUALITY_PIXEL_SIZE[
+								StreamedImage.QUALITY_SCREEN
+							]
+						)
 						redraw = True
 					elif event.key == pygame.K_3:
-						view.height = World.SPOT_SIZE / self.imageServer.qualityPixelSizes[StreamedImage.QUALITY_GRID]
+						view.height = (
+							World.SPOT_SIZE
+							/ ImageServer.QUALITY_PIXEL_SIZE[StreamedImage.QUALITY_GRID]
+						)
 						redraw = True
 					elif event.key == pygame.K_4:
-						view.height = World.SPOT_SIZE / self.imageServer.qualityPixelSizes[StreamedImage.QUALITY_THUMB]
+						view.height = (
+							World.SPOT_SIZE
+							/ ImageServer.QUALITY_PIXEL_SIZE[
+								StreamedImage.QUALITY_THUMB
+							]
+						)
 						redraw = True
 					elif event.key == pygame.K_5:
-						view.height = 190.0 # 80
+						view.height = 190.0
 						redraw = True
 					elif event.key == pygame.K_6:
-						view.height = 280.0 #140
+						view.height = 280.0
 						redraw = True
 					elif event.key == pygame.K_7:
-						view.height = view.maxHeight #300.0
+						view.height = view.max_height
 						redraw = True
 					elif event.key == pygame.K_0:
-						view.height = World.SPOT_SIZE / view_h
+						view.height = World.SPOT_SIZE / view_h_PL
 						redraw = True
 					elif event.key == pygame.K_p:
-						self.crawler.paused = not self.crawler.paused
+						self.crawler.pause_crawling = not self.crawler.pause_crawling
 					elif event.key == pygame.K_o:
-						self.imageServer.paused = not self.imageServer.paused
+						self.image_server.paused = not self.image_server.paused
 					elif event.key == pygame.K_i:
-						self.showInfo += 1
-						if self.showInfo > 2:
-							self.showInfo = 0
+						self.show_info += 1
+						if self.show_info > 2:
+							self.show_info = 0
 						redraw = True
 					elif event.key == pygame.K_g:
-						xyDialog = Dialog_xy()
+						xy_dialog = Dialog_xy()
 					elif event.key == pygame.K_j:
-						last_x_S = math.floor(view.worldx/World.SPOT_SIZE)
-						last_y_S = math.floor(view.worldy/World.SPOT_SIZE)
-						
+						last_x_S = math.floor(
+							view.current_center_world_pos_x_P / World.SPOT_SIZE
+						)
+						last_y_S = math.floor(
+							view.current_center_world_pos_y_P / World.SPOT_SIZE
+						)
+
 						next_x_S = last_x_S
 						next_y_S = last_y_S
-						i = 20
-						while i > 0 :
-							i = i - 1
-							next_x_S = last_x_S + random.randint(-100,100)
-							next_y_S = last_y_S + random.randint(-100,100)
-							frame = self.world.getFrameAt_S(next_x_S,next_y_S)
+						number_of_sub_moves = RugiviMainApp.JUMP_NUMBER_OF_SUBMOVES
+						while number_of_sub_moves > 0:
+							number_of_sub_moves = number_of_sub_moves - 1
+							next_x_S = last_x_S + random.randint(
+								-1 * RugiviMainApp.JUMP_SUBMOVE_DISTANCE_S,
+								RugiviMainApp.JUMP_SUBMOVE_DISTANCE_S,
+							)
+							next_y_S = last_y_S + random.randint(
+								-1 * RugiviMainApp.JUMP_SUBMOVE_DISTANCE_S,
+								RugiviMainApp.JUMP_SUBMOVE_DISTANCE_S,
+							)
+							frame = self.world.get_frame_at_S(next_x_S, next_y_S)
 							if frame != None:
 								last_x_S = next_x_S
 								last_y_S = next_y_S
-						view.worldx = last_x_S * World.SPOT_SIZE + int(World.SPOT_SIZE / 2)
-						view.worldy = last_y_S * World.SPOT_SIZE + int(World.SPOT_SIZE / 2)
+						view.current_center_world_pos_x_P = (
+							last_x_S * World.SPOT_SIZE + int(World.SPOT_SIZE / 2)
+						)
+						view.current_center_world_pos_y_P = (
+							last_y_S * World.SPOT_SIZE + int(World.SPOT_SIZE / 2)
+						)
 						redraw = True
-
-
 
 					elif event.key == pygame.K_n:
-						if view.selection.getSelectedFile() != None:
-							self.open_file(view.selection.getSelectedFile())
+						if view.selection.get_selected_file() != None:
+							self.open_file(view.selection.get_selected_file())
 					elif event.key == pygame.K_t:
-						if view.selection.getSelectedFile() != None:
-							fapelsystemDir = dir_helper.getModuleDir("fapelsystem")
-							if fapelsystemDir != None:
-								subprocess.Popen([python_executable,fapelsystemDir + "/fapel_tagger.py", view.selection.getSelectedFile()])
+						if view.selection.get_selected_file() != None:
+							fapelsystem_dir = dir_helper.get_module_dir("fapelsystem")
+							if fapelsystem_dir != None:
+								subprocess.Popen(
+									[
+										python_executable,
+										fapelsystem_dir + "/fapel_tagger.py",
+										view.selection.get_selected_file(),  # type: ignore
+									]
+								)
 					elif event.key == pygame.K_s:
-						if view.selection.getSelectedFile() != None:
-							fapelsystemDir = dir_helper.getModuleDir("fapelsystem")
-							if fapelsystemDir != None:
-								subprocess.Popen([python_executable,fapelsystemDir + "/fapel_fap_set.py", view.selection.getSelectedFile()])
+						if view.selection.get_selected_file() != None:
+							fapelsystem_dir = dir_helper.get_module_dir("fapelsystem")
+							if fapelsystem_dir != None:
+								subprocess.Popen(
+									[
+										python_executable,
+										fapelsystem_dir + "/fapel_fap_set.py",
+										view.selection.get_selected_file(),  # type: ignore
+									]
+								)
+
+					elif event.key == pygame.K_e:
+						if self.world_overlook == None:
+							self.save_dialog = Dialog_save_file()
+
 					elif event.key == pygame.K_LEFT:
-						self.fapTables.switchPrevious()
-						currentFapTable = self.fapTableManager.getFapTableByDir(self.fapTables.getCurrentFapTableDir())
-						fapTableView.setCurrentFapTable(currentFapTable)
+						self.fapTables.switch_previous()
+						current_fap_table = self.fap_table_manager.get_fap_table_by_dir(
+							self.fapTables.get_current_fap_table_dir()
+						)
+						fap_table_view.set_current_fap_table(current_fap_table)
 						redraw = True
 					elif event.key == pygame.K_RIGHT:
-						self.fapTables.switchNext()
-						currentFapTable = self.fapTableManager.getFapTableByDir(self.fapTables.getCurrentFapTableDir())
-						fapTableView.setCurrentFapTable(currentFapTable)
+						self.fapTables.switch_next()
+						current_fap_table = self.fap_table_manager.get_fap_table_by_dir(
+							self.fapTables.get_current_fap_table_dir()
+						)
+						fap_table_view.set_current_fap_table(current_fap_table)
 						redraw = True
 					elif event.key == pygame.K_UP:
-						self.fapTables.switchUp()
-						currentFapTable = self.fapTableManager.getFapTableByDir(self.fapTables.getCurrentFapTableDir())
-						fapTableView.setCurrentFapTable(currentFapTable)
+						self.fapTables.switch_up()
+						current_fap_table = self.fap_table_manager.get_fap_table_by_dir(
+							self.fapTables.get_current_fap_table_dir()
+						)
+						fap_table_view.set_current_fap_table(current_fap_table)
 						redraw = True
 					elif event.key == pygame.K_DOWN:
-						self.fapTables.switchDown()
-						currentFapTable = self.fapTableManager.getFapTableByDir(self.fapTables.getCurrentFapTableDir())
-						fapTableView.setCurrentFapTable(currentFapTable)
+						self.fapTables.switch_down()
+						current_fap_table = self.fap_table_manager.get_fap_table_by_dir(
+							self.fapTables.get_current_fap_table_dir()
+						)
+						fap_table_view.set_current_fap_table(current_fap_table)
 						redraw = True
 
-
-
-
-			if (view_h != view_h_old) or (view_w != view_w_old):
-				view_h_old = view_h
-				view_w_old = view_w
+			if (view_h_PL != view_h_old_PL) or (view_w_PL != view_w_old_PL):
+				view_h_old_PL = view_h_PL
+				view_w_old_PL = view_w_PL
 				redraw = True
 
+			if xy_dialog != None and xy_dialog.result != None:
+				print("Going to", xy_dialog.result)
+				view.current_center_world_pos_x_P = xy_dialog.result[
+					0
+				] * World.SPOT_SIZE + int(World.SPOT_SIZE / 2)
+				view.current_center_world_pos_y_P = xy_dialog.result[
+					1
+				] * World.SPOT_SIZE + int(World.SPOT_SIZE / 2)
+				xy_dialog = None
 
-			if xyDialog != None and xyDialog.result != None:
-				print("Going to", xyDialog.result)
-				view.worldx = xyDialog.result[0] * World.SPOT_SIZE + int(World.SPOT_SIZE / 2)
-				view.worldy = xyDialog.result[1] * World.SPOT_SIZE + int(World.SPOT_SIZE / 2)
-				xyDialog = None
+			if self.save_dialog != None and self.save_dialog.result != None:
+				self.world_overlook_filename = str(self.save_dialog.result)
+				self.save_dialog = None
+				if self.world_overlook_filename != "":
+					print("Filename for world map:", self.world_overlook_filename)
+					self.world_overlook = WorldOverlook(
+						self.world, self.world_overlook_filename
+					)
+					self.world_overlook.run()
 
-
-
-
-
-			if (not view.selection.isVisible()) or (not World.SPOT_SIZE / view.height < view_h * 0.7) or (not World.SPOT_SIZE / view.height < view_w * 0.7):
+			if (
+				(not view.selection.is_visible())
+				or (not World.SPOT_SIZE / view.height < view_h_PL * 0.7)
+				or (not World.SPOT_SIZE / view.height < view_w_PL * 0.7)
+			):
 				# move selection to center when it's out of view or the image is almost full screen
-				clickx = view.worldx
-				clicky = view.worldy
+				click_x_P = view.current_center_world_pos_x_P
+				click_y_P = view.current_center_world_pos_y_P
 
-				clickx_S = int(clickx / World.SPOT_SIZE)
-				if clickx < 0:
-					clickx_S -= 1
-				clicky_S = int(clicky / World.SPOT_SIZE)
-				if clicky < 0:
-					clicky_S -= 1
+				clicked_spot_x_S = int(click_x_P / World.SPOT_SIZE)
+				if click_x_P < 0:
+					clicked_spot_x_S -= 1
+				clicked_spot_y_S = int(click_y_P / World.SPOT_SIZE)
+				if click_y_P < 0:
+					clicked_spot_y_S -= 1
 
-				view.selection.x_S = clickx_S
-				view.selection.y_S = clicky_S
-				view.selection.updateSelectedSpot()
+				view.selection.x_S = clicked_spot_x_S
+				view.selection.y_S = clicked_spot_y_S
+				view.selection.update_selected_spot()
 
 				# and switch off peek, when selection moves by itself
-				view.selection.peekEnabled = False
+				view.selection.peek_enabled = False
 
 				redraw = True
-
-
 
 			if redraw:
 				view.redrawtoken += 1
 				if view.redrawtoken == 256:
 					view.redrawtoken = 0
 
+			view.draw_grid = self.show_info > 1
 
-			# Instead of the event loop above you could also call pygame.event.pump
-			# each frame to prevent the window from freezing. Comment it out to check it.
-			# pygame.event.pump()
-
-			#click = pygame.mouse.get_pressed()
-			#mousex, mousey = pygame.mouse.get_pos()
-			#print(click, mousex, mousey)
-
-
-
-			#if img1 != None:
-			#	if img1.state == StreamedImage.STATE_READY:
-			#		self.display.blit(img1.getSurface(),(80,10))
-
-
-			#for y in range(0,noy):
-			#	for x in range(0,nox):
-			#		pos = y*nox+x
-			#		if manycats[pos].state == StreamedImage.STATE_READY:
-			#			self.display.blit(manycats[pos].getScaledSurface(),(x*100,y*100))
-
-
-
-
-
-
-
-
-
-			view.drawGrid = self.showInfo > 1
-
-			if not fapTableView.editModeEnabled:
-
-			
-				#view.drawView(smlsurf,0,0,320,200)
-				#smlsurf = smlsurf.convert(pali)
-			
-				#cat2 = pygame.transform.scale(smlsurf, (1600,1000))
-				#self.display.blit(cat2,(0,0))
-			
-				view.drawView(self.display,0,0,view_w,view_h)
+			if not fap_table_view.edit_mode_enabled:
+				view.draw_view(self.display, 0, 0, view_w_PL, view_h_PL)
 			else:
-				self.display.fill((0,0,0,0))
-			fapTableView.drawFapTableView(self.display,0,0,view_w,view_h)
+				self.display.fill((0, 0, 0, 0))
+			fap_table_view.draw_fap_table_view(self.display, 0, 0, view_w_PL, view_h_PL)
 
+			if self.show_info > 0:
+				memory_usage_system = int(
+					psutil.Process().memory_info().rss / (1024 * 1024)
+				)
+				memory_usage_image_server = int(
+					self.image_server.calculate_memory_usage() / (1024 * 1024)
+				)
 
+				if self.show_info > 1:
+					status.writeln("FPS: " + str(int(clock.get_fps())))
+					status.writeln(
+						"Center: "
+						+ str(int(view.current_center_world_pos_x_P))
+						+ ","
+						+ str(int(view.current_center_world_pos_y_P))
+						+ " Pixel; Spot: "
+						+ str(
+							math.floor(
+								view.current_center_world_pos_x_P / World.SPOT_SIZE
+							)
+						)
+						+ ","
+						+ str(
+							math.floor(
+								view.current_center_world_pos_y_P / World.SPOT_SIZE
+							)
+						)
+						+ " Height: "
+						+ str(view.height)
+					)
 
-			if self.showInfo > 0:
+				status.writeln(
+					"Selected Spot: "
+					+ str(view.selection.x_S)
+					+ ","
+					+ str(view.selection.y_S)
+				)
 
-
-
-				#frame = self.world.getFrameAt_S(math.floor(view.worldx / World.SPOT_SIZE), math.floor(view.worldy / World.SPOT_SIZE))
-				#if frame != None and frame.image != None:
-				#	fileUnderCenter = frame.image.originalFilePath
-				#else:
-				#	fileUnderCenter = ""
-
-
-
-				memuse = int(psutil.Process().memory_info().rss / (1024*1024))
-				memuse2 = int(self.imageServer.calculateMemoryUsage() / (1024*1024))
-
-				if (self.showInfo > 1):
-					status.writeln("FPS: "+str(int(clock.get_fps())))
-					status.writeln("Center: "+str(int(view.worldx))+","+str(int(view.worldy))+" Pixel; Spot: "+str(math.floor(view.worldx/World.SPOT_SIZE))+","+str(math.floor(view.worldy/World.SPOT_SIZE))+" Height: "+str(view.height))
-					
-				status.writeln("Selected Spot: "+str(view.selection.x_S)+","+str(view.selection.y_S))
-
-				if (self.showInfo > 1):
-					status.writeln("Disk Access Total Loaded: File: "+str(self.imageServer._totalDiskLoaded)+" DB: "+str(self.imageServer._totalDBLoaded))
-					status.writeln("DB Size: "+str(self.imageServer.imageServerDatabase.imageDBsize))
-					status.writeln("ImgDrawn: "+str(view.performance_imagesDrawn)+" maxDrawRounds:"+str(view.maxdrawrounds))
-					status.writeln("MemP: "+str(memuse)+" MB")
-					status.writeln("MemI: "+str(memuse2)+" MB")
-					status.writeln("ImgServer: "+self.imageServer.getStatusLine())
-					status.writeln("World loaded: Chunks: "+str(self.world.countChunksInMemory())+" Frames: "+str(self.world.countFrames()))
-					status.writeln("Crawler Status: "+self.crawler.status)
-					status.writeln("Crawler Dir: "+self.crawler.currentDir)
-				if view.selection.getSelectedFile() != None:
-					status.writeln("Selected Image: "+view.selection.getSelectedFile())
+				if self.show_info > 1:
+					status.writeln(
+						"Disk Access Total Loaded: File: "
+						+ str(self.image_server._total_disk_loaded)
+						+ " DB: "
+						+ str(self.image_server._total_database_loaded)
+					)
+					status.writeln(
+						"DB Size: "
+						+ str(self.image_server.image_server_database.image_db_size)
+					)
+					status.writeln(
+						"ImgDrawn: "
+						+ str(view.performance_images_drawn)
+						+ " maxDrawRounds:"
+						+ str(view.max_draw_rounds)
+					)
+					status.writeln("MemP: " + str(memory_usage_system) + " MB")
+					status.writeln("MemI: " + str(memory_usage_image_server) + " MB")
+					status.writeln("ImgServer: " + self.image_server.get_status_line())
+					status.writeln(
+						"World loaded: Chunks: "
+						+ str(self.world.count_chunks_in_memory())
+						+ " Frames: "
+						+ str(self.world.count_frames())
+					)
+					status.writeln("Crawler Status: " + self.crawler.status)
+					status.writeln("Crawler Dir: " + self.crawler.current_dir)
+				if view.selection.get_selected_file() != None:
+					status.writeln(
+						"Selected Image: " + view.selection.get_selected_file()  # type: ignore
+					)
 				else:
 					status.writeln("Selected Image: -none-")
-				status.writeln("Queue: "+str(self.imageServer.getQueueSize()))
-				if (self.showInfo > 1):
+				status.writeln("Queue: " + str(self.image_server.get_queue_size()))
+
+				if self.world_overlook != None:
+					status.writeln("World Overlook: " + self.world_overlook.status)
+
+				if self.show_info > 1:
 					status.writeln("")
 					status.writeln("Keys: 1-7 zoom, 0 zoom fit, n open file")
 					status.writeln("      i toggle info, o/p pause imgserver/crawl")
-					status.writeln("      t tag, s add to set")
+					status.writeln("      t tag, s add to set, e generate map png")
 
 				status.draw(self.display)
 
 			if self.running == False:
-				self.display.fill((100,100,100,0))
+				self.display.fill((100, 100, 100, 0))
 
 				font = pygame.font.SysFont("monospace", 50)
-				label = font.render("closing databases... please wait!", 1, (0,0,0))
+				label = font.render(
+					"closing databases... please wait!", True, (0, 0, 0)
+				)
 				self.display.blit(label, (30, 30))
 
 			pygame.display.flip()
-			#self.imageServer.update()
-			
-			if self.imageServer.getQueueSize() > 200 and not moveview and not fapTableView.editModeEnabled:
-				sleep(0.2)
-			
-			clock.tick(80) # TODO limits fps
-			#clock.tick(20) # TODO limits fps
+
+			if (
+				self.image_server.get_queue_size() > 200
+				and not move_view
+				and not fap_table_view.edit_mode_enabled
+			):
+				sleep(0.08)
+
+			clock.tick(80)  # limits fps
 
 		font = pygame.font.SysFont("monospace", 50)
-		label = font.render(".", 1, (0,0,0))
+		# label = font.render(".", 1, (0, 0, 0))
+		label = font.render(".", True, (0, 0, 0))
 		self.display.blit(label, (30, 80))
 		pygame.display.flip()
 
+		if self.world_overlook != None:
+			print("Stopping world overlook")
+			self.world_overlook.stop()
+
 		print("Stopping image crawler")
 		self.crawler.stop()
-		#print("Stopping inode crawler")
-		#self.iNodeDatabase.stop()
-		self.display.blit(label, (30+40*1, 80))
+		self.display.blit(label, (30 + 40 * 1, 80))
 		pygame.display.flip()
 
 		print("Stopping FapTableManager")
-		self.fapTableManager.stop()
-		self.display.blit(label, (30+40*2, 80))
+		self.fap_table_manager.stop()
+		self.display.blit(label, (30 + 40 * 2, 80))
 		pygame.display.flip()
 
-
 		print("Stopping image server")
-		self.imageServer.stop()
-		self.display.blit(label, (30+40*3, 80))
+		self.image_server.stop()
+		self.display.blit(label, (30 + 40 * 3, 80))
 		pygame.display.flip()
 		print("Closing pygame window")
 		pygame.quit()
@@ -823,16 +840,12 @@ class App:
 
 
 print("RuGiVi Image World Viewer")
-print("Version", VERSION)
-
-
 
 if __name__ == "__main__":
-	app = App()
+	app = RugiviMainApp()
 	app.run()
 
 
-def main():
-	app = App()
+def main() -> NoReturn:
+	app = RugiviMainApp()
 	app.run()
-

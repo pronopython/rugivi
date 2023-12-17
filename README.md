@@ -53,12 +53,21 @@ The pattern like structure between pictures and red empty spots on the right is 
 
 ![](img/8.png)
 
+You can also export a world map:
 
+**World with 75,000 images** (1 pixel = 1 image)
+
+![](img/map1.jpg)
+
+
+**World with 700,000 images** (1 pixel = 1 image)
+
+![](img/map2.jpg)
 
 # Benefits
 
 * Works with hundreds of thousands of images **at the same time**
-* Tested with around 700.000 images, that's a RuGiVi Pixel size of 4.600.000 x 4.400.000 pixels or 20.240.000 Megapixels or 10.120.000 Full HD Screens to be scrolled through
+* Tested with around 700.000 images (see the world map shown here), that's a RuGiVi Pixel size of 4.600.000 x 4.400.000 pixels or 20.240.000 Megapixels or 10.120.000 Full HD Screens to be scrolled through
 * Dynamic view rendering - screen is updated partially when drawing takes more time
 * Thumbnails are cached in a database
 * Works together with the [Fapel-System](https://github.com/pronopython/fapel-system)
@@ -75,6 +84,8 @@ The pattern like structure between pictures and red empty spots on the right is 
 * 8 GB RAM or more
 * Python 3
 * PIP Python Package Manager
+
+
 
 
 # Installation
@@ -106,7 +117,31 @@ It installs RuGiVi via Python's PIP and creates start menu entries.
 
 Proceed with [Configure RuGiVi](#configure-rugivi) (you need to do this!)
 
+## Ubuntu Linux Upgrade
 
+If you upgrade from a previous version of RuGiVi, follow these steps.
+
+Note that it is advised to backup your databases (see further below).
+
+### 1. Clone this repository
+
+Clone this repository into a writeable directory.
+
+### 2. Uninstall old version with pip
+
+Run
+
+`pip uninstall rugivi`
+
+to uninstall the old version, but leave config file and database intact.
+
+### 3. Install RuGiVi via pip
+
+Run
+
+`pip uninstall .`
+
+in the repository root (the one containing the `setup.py` file)
 
 
 ## Windows Installation
@@ -135,6 +170,24 @@ It installs RuGiVi via Python's PIP and creates the start menu entries.
 Proceed with [Configure RuGiVi](#configure-rugivi) (you need to do this!)
 
 
+## Windows Upgrade
+
+If you upgrade from a previous version of RuGiVi, follow these steps.
+
+Note that it is advised to backup your databases (see further below).
+
+### 1. Clone this repository
+
+Clone this repository into a writeable directory.
+
+### 2. Run upgrade batch file
+
+Doubleclick
+
+`upgrade_windows_installation.bat`
+
+to uninstall the old version, but leave config file and database intact and then automatically install the new version.
+
 
 # Configure RuGiVi
 
@@ -155,9 +208,7 @@ Change the entries to fit your setup.
 | FapTable parent dirs | See FapTables |
 | FapTable single dirs | See FapTables |
 
-
-
-
+Make sure your database files are placed on a SSD drive!
 
 # Start RuGiVi
 
@@ -201,9 +252,7 @@ You can watch this process or start traveling through the images world.
 |g                |Open Dialog to go to a spot by coordinates x,y                                      |
 |o                |Pause image server (troubleshooting)                                                |
 |p                |Pause crawler (troubleshooting)                                                     |
-
-
-
+|e                |Generate and export world map as png file                                           |
 
 
 # Quitting RuGiVi
@@ -279,6 +328,51 @@ The last set of directories are the "single dirs" where all the directories are 
 To switch off the display of fapel tables just press "up" arrow key until you reach "(off)" so no fapel table is presented.
 
 
+
+# Export World Overlook / World Map
+
+You can generate an image file where every pixel represents one image on the world map of RuGiVi.
+
+
+RuGiVi testing world map. You can clearly see that I used the same (hardlinked) images again and again to generate a 75000 picture directory tree.
+
+**75,000 images** (1 pixel = 1 image)
+
+![](img/map1.jpg)
+
+Real map of a collection of individual pictures and picture sets with around 700,000 pictures total. You can clearly see sets (same color) and folders with single random pictures.
+
+**700,000 images** (1 pixel = 1 image)
+
+![](img/map2.jpg)
+
+
+Press `e` to open up a filename dialog. Specifiy a place and a name for your map `.png` image file.
+
+![](img/7614.png)
+
+RuGiVi will then start to load all thumbnail / color information and place one pixel per image on the png file.
+
+Do not wander around in RuGiVi while the map is generated.
+
+Press `i` to show the information display. It will tell you how many thumbs are left to load:
+
+`World Overlook: Remaining Thumbs: x`
+
+![](img/7615.png)
+
+Note that the image loader queue is constantly filled and emptied while generating the map. RuGiVi will save the png with what has been loaded already every few seconds while generating the map.
+
+It will also tell you, when your map image is finished:
+
+`World Overlook: finished`
+
+It is advised to restart RuGiVi afterwards.
+
+You will need 1 GB of RAM for every 150,000 images in your world.
+
+Note that you can only run World Overlook one time per RuGiVi Session. You need to restart RuGiVi, if you want to export another map.
+
 # Troubleshooting
 
 
@@ -304,14 +398,60 @@ To switch off the display of fapel tables just press "up" arrow key until you re
 * Sometimes the garbage collection is not run or runs too late and memory is depleted (rugivi can easily grab gigabytes of RAM of course). You then get an out-of-memory error.
 * Despite not changing anything, RuGiVi does not work on read-only media directories. This is because pygame image loader opens files with write access.
 * TIFF files may produce warnings which on Windows are opened as separate message boxes.
+* Big worlds (> 500,000 images) are not round or rectangular but have the shape of a plus sign ("+"), see big world map example on this page. This is due to the crawler placement algorithm, which is in alpha state.
 
 # Technical Stuff
 
 Every Image is placed into a Frame with Spot Size of 4096 x 4096 Pixels, which is Heigth = 1
+
 A Frame is placed onto a spot.
+
 Spots are grouped into chunks. Every Chunk contains 32 x 32 = 1024 Spots (and thus, a maximum of 1024 images)
 
 RuGiVi has its own garbage collection which is called "housekeeping" which runs every 5 minutes.
+
+## Variable and attribute naming convention within the code
+
+| Postfix | Address Mode | Explanation |
+|-----|----|----|
+| _P | pixel | pixel address in world or with +L locally on screen |
+| _S | spot | one spot represents a 4096 x 4096 pixel surface for an image  |
+| _C | chunk | A chunk consists of a matrix of 32 x 32 spots |
+| _CS | chunk and spot | tupel address with chunk, then spot |
+| +L | local address | _PL then means e.g. pixel on screen, _SL means spot within a chunk |
+
+A spot is the place where a frame with an image is placed. This is differentiated to allow bigger frame sizes (e.g. 2x2 spots) in future versions.
+
+## Sizes of images kept in RAM
+
+The code and the gui refer to different sizes an image can have. Different sizes are kept in RAM and discarded to free memory when the image is not drawn for a longer period of time.
+
+
+
+| Quality | Abbreviation | QUALITY_PIXEL_SIZE |
+| ----|-----|-----|
+| Color | C | just average color (R,G,B) over all pixels |
+|Thumb| T| 32 x 32|
+|Grid | G | 128 x 128 |
+| Screen | S | 1000 x 1000|
+| Original | O | full size of media file |
+
+Each thumb needs around 3 to 6 kB of RAM, so for world map generation you will need 1 GB of RAM for every 150,000 images in your world.
+
+## Disk space needed
+
+The thumbs.sqlite file will use the following disk space depending on your world size.
+
+| Number of images | approx. thumb db size |
+| ----|-----|
+|10.000 | 47 MB|
+|50.000 | 236 MB|
+|200.000 | 1 GB|
+|500.000 | 2.3 GB|
+|700.000 | 3.3 GB|
+|1.000.000 | 4.7 GB|
+
+The chunks.sqlite will stay around 100 MB.
 
 ## Information display
 
@@ -329,15 +469,42 @@ Press `i` a few times to show the information display.
 |DB Size| Number of images in the thumb database|
 |ImgDrawn| Drawn images on screen|
 |maxDrawRounds|How many drawing rounds per Frame|
-|MemP|Used memory reported by OS|
-|MemI|Used memory only for images calculated by RuGiVi's Image Server|
+|MemP|Used memory reported by OS ("Process memory")|
+|MemI|Used memory only for images calculated by RuGiVi's Image Server ("Image server memory")|
 |ImgServer| Images in memory: T=Thumb Size, G=Grid Size, S=Screen Size, O=Original (Full) Size|
 |World loaded| How many chunks and frames are in memory|
 |Crawler Status| saving to db = DB is written do disk, sleeping = so the crawler does not eat all process power, correcting border = creating the border around the newly fetched frames/spots, fetching next dir = scanning dir, finding biome = finding a place in the world for all media of the scanned dir
 |Crawler Dir| The current directory which is scanned|
 |Selected Image| The currently selected image|
 |Queue| Image Server Queue (both Disk and DB access)|
+|World Overlook|Only displayed when a map is being generated. Shows the status of the generation process.|
 
+
+## Backup database files
+
+If you want to backup your config and database files, just make a copy of these files. If you did not change the location in the `rugivi_configurator`, then you find the files here:
+
+
+|file     | Linux                 | Windows      |
+|------------|---------------------|---------------------------|
+|rugivi.conf     | ~/.config/               | C:\Users\\[username]\\AppData\Roaming\RuGiVi  |
+|thumbs.sqlite    | ~/.local/share/rugivi/     | C:\Users\\[username]\\AppData\Roaming\RuGiVi  |
+|chunks.sqlite    | ~/.local/share/rugivi/     | C:\Users\\[username]\\AppData\Roaming\RuGiVi  |
+
+
+# Release Notes
+
+## v0.3.0-alpha
+
+### added
+
+- World overlook / world map generation and export as a png file.
+
+
+### changed
+
+- Complete refactor of code base: formatted, cleaned, refactored meaningful variable names. Better for the author and everyone who wants to understand the code
+- Faster image loading: Tweaked thread wait times and image loading sequence
 
 
 

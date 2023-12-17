@@ -9,15 +9,11 @@
 #
 ##############################################################################################
 #
-VERSION = "0.1.0-alpha"
-#
-##############################################################################################
-#
-# Copyright (C) 2023 PronoPython
+# Copyright (C) PronoPython
 #
 # Contact me at pronopython@proton.me
 #
-# This program is free software: you can redistribute it and/or modify it 
+# This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
 # Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
@@ -33,18 +29,41 @@ VERSION = "0.1.0-alpha"
 ##############################################################################################
 #
 
-class Frame:
-
-	def __init__(self):
-		self.worldx1 = 0
-		self.worldy1 = 0
-		self.worldx2 = 0
-		self.worldy2 = 0
+from typing import Optional
+from .world_things.world import World
+from .image_service.abstract_streamed_media import AbstractStreamedMedia
 
 
+class Selection:
+	def __init__(self, world, view) -> None:
+		self.world: World = world
+		self.view = view
 
-	def draw(self):
-		pass
+		self.x_S = 0
+		self.y_S = 0
 
+		self.colormix = 0
 
+		self.peek_enabled = False
 
+		self.frame = None
+		self.image: AbstractStreamedMedia = None  # type: ignore
+
+	def is_visible(self) -> bool:
+		return (
+			self.view.world_x1_S <= self.x_S
+			and self.view.world_y1_S <= self.y_S
+			and self.view.world_x2_S >= self.x_S
+			and self.view.world_y2_S >= self.y_S
+		)
+
+	def update_selected_spot(self) -> None:
+		self.frame = self.world.get_frame_at_S(self.x_S, self.y_S)
+		if self.frame != None:
+			self.image = self.frame.image  # type: ignore
+
+	def get_selected_file(self) -> Optional[str]:
+		if self.image != None:
+			return self.image.original_file_path
+		else:
+			return None

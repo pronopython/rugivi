@@ -3,25 +3,17 @@
 ##############################################################################################
 #
 # RuGiVi - Adult Media Landscape Browser
-# installi_ubuntu.sh is the installer script to copy all py files
 #
 # For updates see git-repo at
 # https://github.com/pronopython/rugivi
 #
 ##############################################################################################
 #
-VERSION=0.2.0
-#
-CONFIGDIR=~/.config
-INSTALLDIR=""
-#
-##############################################################################################
-#
-# Copyright (C) 2023 PronoPython
+# Copyright (C) PronoPython
 #
 # Contact me at pronopython@proton.me
 #
-# This program is free software: you can redistribute it and/or modify it 
+# This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
 # Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
@@ -36,15 +28,14 @@ INSTALLDIR=""
 #
 ##############################################################################################
 #
-# TODO comment header
-# TODO clean out comments
+
+CONFIGDIR=~/.config
+INSTALLDIR=""
 
 
 
-##################################################################################
 
-
-echo "RuGiVi installer v${VERSION}"
+echo "RuGiVi installer"
 echo ""
 echo "The installer now creates the program dirs and config files."
 echo "Sudo is needed for some actions."

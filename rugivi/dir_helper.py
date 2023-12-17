@@ -2,23 +2,18 @@
 #
 ##############################################################################################
 #
-# The fapel system organizes image and video collections under Linux with standard folders.
+# RuGiVi - Adult Media Landscape Browser
 #
 # For updates see git-repo at
-#https://github.com/pronopython/fapel-system
+# https://github.com/pronopython/rugivi
 #
 ##############################################################################################
 #
-VERSION = "0.2.0" #TODO
-CONFIGFILE="~/.config/fapel_system.conf"
-#
-##############################################################################################
-#
-# Copyright (C) 2022-2023 PronoPython
+# Copyright (C) PronoPython
 #
 # Contact me at pronopython@proton.me
 #
-# This program is free software: you can redistribute it and/or modify it 
+# This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
 # Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
@@ -33,59 +28,51 @@ CONFIGFILE="~/.config/fapel_system.conf"
 #
 ##############################################################################################
 #
+
+
 import os
 from pathlib import Path
-import configparser
 import platform
 import importlib
-
-
-def getHomeDir():
-	return os.path.expanduser('~')
-
-def expandHomeDir(path):
-	return path.replace("~", getHomeDir())
-
-def getFilenameWithoutExtension(pathWithFullFilename):
-	return Path(pathWithFullFilename).stem
-
-def getLastPartOfFilename(path):
-	myName = getFilenameWithoutExtension(os.path.abspath(path))
-	last1 = myName.split('_')[-1]
-	last2 = myName.split('-')[-1]
-	if (last1 != myName) or (last2 != myName):
-		if len(last1) < len(last2):
-			counterKey = last1
-		else:
-			counterKey = last2
-	return counterKey
 
 OS_LINUX = "Linux"
 OS_WINDOWS = "Windows"
 OS_MACOS = "Darwin"
 
-def getOS():
+
+def get_home_dir() -> str:
+	return os.path.expanduser("~")
+
+
+def expand_home_dir(path: str) -> str:
+	return path.replace("~", get_home_dir())
+
+
+def get_filename_without_extension(path_with_full_filename: str) -> str:
+	return Path(path_with_full_filename).stem
+
+
+def get_os() -> str:
 	return platform.system()
 
 
-def getConfigDir(subfolderForWindows):
-	configDir = ""
-	myos = getOS()
+def get_config_dir(subfolder_for_windows) -> str:
+	config_dir = ""
+	myos = get_os()
 	if myos == OS_LINUX or myos == OS_MACOS:
-		configDir = os.path.join(getHomeDir(),".config")
+		config_dir = os.path.join(get_home_dir(), ".config")
 	elif myos == OS_WINDOWS:
-		configDir = os.path.join(os.environ['APPDATA'], subfolderForWindows)
-	return configDir
+		config_dir = os.path.join(os.environ["APPDATA"], subfolder_for_windows)
+	return config_dir
 
-def getInstallDir():
+
+def get_install_dir() -> str:
 	return os.path.dirname(os.path.realpath(__file__))
 
 
-def getModuleDir(module):
-	#return importlib.machinery.PathFinder().find_module(module).get_filename()
-	moduleSpec = importlib.machinery.PathFinder().find_spec(module)
+def get_module_dir(module):
+	moduleSpec = importlib.machinery.PathFinder().find_spec(module)  # type: ignore
 	if moduleSpec != None:
 		return moduleSpec.submodule_search_locations[0]
 	else:
 		return None
-

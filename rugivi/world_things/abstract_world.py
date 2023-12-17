@@ -9,15 +9,11 @@
 #
 ##############################################################################################
 #
-VERSION = "0.1.0-alpha"
-#
-##############################################################################################
-#
-# Copyright (C) 2023 PronoPython
+# Copyright (C) PronoPython
 #
 # Contact me at pronopython@proton.me
 #
-# This program is free software: you can redistribute it and/or modify it 
+# This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
 # Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
@@ -33,34 +29,22 @@ VERSION = "0.1.0-alpha"
 ##############################################################################################
 #
 
-class Selection:
+import abc
+import math
 
-	def __init__(self, world, view):
-		self.world = world
-		self.view = view
+class AbstractWorld:
+	__metaclass__ = abc.ABCMeta 
+	SPOT_SIZE = 4096  # pixels
+	CHUNK_SIZE = 32  # spots
 
-		self.x_S = 0
-		self.y_S = 0
+	def __init__(self) -> None:
+		pass
 
-		self.colormix = 0
+	def convert_SL_to_S(self,sl,c):
+		return ( c * AbstractWorld.CHUNK_SIZE ) + sl
+	
+	def convert_S_to_C(self, s: int) -> int:
+		return math.floor(s / AbstractWorld.CHUNK_SIZE)
 
-		self.peekEnabled = False
-
-		self.frame = None
-		self.image = None
-
-
-	def isVisible(self):
-		return self.view.worldx1_S <= self.x_S and  self.view.worldy1_S <= self.y_S and  self.view.worldx2_S >= self.x_S and  self.view.worldy2_S >= self.y_S
-
-
-	def updateSelectedSpot(self):
-		self.frame = self.world.getFrameAt_S(self.x_S,self.y_S)
-		if self.frame != None:
-			self.image = self.frame.image
-
-	def getSelectedFile(self):
-		if self.image != None:
-			return self.image.originalFilePath
-		else:
-			return None
+	def convert_S_to_SL(self, s: int) -> int:
+		return s % AbstractWorld.CHUNK_SIZE

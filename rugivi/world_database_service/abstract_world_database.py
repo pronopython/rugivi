@@ -29,7 +29,14 @@
 ##############################################################################################
 #
 
-import os
+import abc
+from rugivi.world_things.chunk import Chunk
 
-def printModuleDir():
-	print(os.path.dirname(os.path.realpath(__file__)))
+
+
+class AbstractWorldDatabase:
+    __metaclass__ = abc.ABCMeta
+	
+    @abc.abstractmethod
+    def get_chunk_at_C(self, x_C,y_C) -> Chunk : # type: ignore
+        pass

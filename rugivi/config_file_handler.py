@@ -2,18 +2,18 @@
 #
 ##############################################################################################
 #
-# The fapel system organizes image and video collections under Linux with standard folders.
+# RuGiVi - Adult Media Landscape Browser
 #
 # For updates see git-repo at
-#https://github.com/pronopython/fapel-system
+# https://github.com/pronopython/rugivi
 #
 ##############################################################################################
 #
-# Copyright (C) 2022-2023 PronoPython
+# Copyright (C) PronoPython
 #
 # Contact me at pronopython@proton.me
 #
-# This program is free software: you can redistribute it and/or modify it 
+# This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
 # Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
@@ -28,70 +28,60 @@
 #
 ##############################################################################################
 #
+
 import os
 from pathlib import Path
 import configparser
 from . import dir_helper as dir_helper
 
 
-##############################################################################################
-#Load Config
-##############################################################################################
+class ConfigFileHandler:
+	def __init__(self, configFilePath) -> None:
+		self.config_file_path = configFilePath
 
-class FapelSystemConfigFile:
+		self.homedir = dir_helper.get_home_dir()
+		self.config_file_path = dir_helper.expand_home_dir(self.config_file_path)
 
-	
-	def __init__(self, configFilePath):
-		self.configFilePath = configFilePath
+		self.create_config_parser_and_load_config()
+		self.config_changed = False
 
-		self.homedir = dir_helper.getHomeDir()
-		self.configFilePath = dir_helper.expandHomeDir(self.configFilePath)
-
-		self.createConfigParserAndLoadConfig()
-		self.configChanged = False
-
-	def createConfigParserAndLoadConfig(self):
-		self.configParser = None
-		print("Opening config file",self.configFilePath)
-		if (os.path.isfile(self.configFilePath)):
-			self.configParser = configparser.RawConfigParser(allow_no_value=True)
-			self.configParser.read(self.configFilePath)
+	def create_config_parser_and_load_config(self) -> None:
+		self.config_parser: configparser.RawConfigParser = None  # type: ignore
+		print("Opening config file", self.config_file_path)
+		if os.path.isfile(self.config_file_path):
+			self.config_parser = configparser.RawConfigParser(allow_no_value=True)
+			self.config_parser.read(self.config_file_path)
 		else:
 			print("Config file is missing, abort!")
 			exit()
-			
-	def getConfigParser(self):
-		return self.configParser
 
+	def get_config_parser(self) -> configparser.RawConfigParser:
+		return self.config_parser
 
+	def get(self, group, key) -> str:
+		return self.config_parser.get(group, key)
 
-	def get(self, group, key):
-		return self.configParser.get(group, key)
+	def get_int(self, group, key) -> int:
+		return int(self.config_parser.get(group, key))
 
+	def get_boolean(self, group, key) -> bool:
+		return self.config_parser.get(group, key) in ("True", "TRUE", "true", "1")
 
-	def getInt(self, group, key):
-		return int(self.configParser.get(group, key))
-	
-	def getBoolean(self, group, key):
-		return self.configParser.get(group, key) in ("True","TRUE","true","1")
-		
-	def getDir(self, group, key, ifEmpty=""):
+	def get_directory_path(self, group, key, ifEmpty="") -> str:
 		path = self.get(group, key)
 		if path == "":
 			return ifEmpty.replace("~", self.homedir)
 		return path.replace("~", self.homedir)
 
-	
-	def items(self, group):
-		return self.configParser.items(group)
+	def items(self, group) -> list:
+		return self.config_parser.items(group)
 
-	def changeConfig(self):
-		self.configChanged = True
-		return self.configParser		
-		
-	def writeChangedConfig(self):
-		if self.configChanged:
-			print("Writing changes to config file",self.configFilePath)
-			configfile = open(self.configFilePath, 'w')
-			self.configParser.write(configfile)		
+	def change_config(self) -> configparser.RawConfigParser:
+		self.config_changed = True
+		return self.config_parser
 
+	def write_changed_config(self) -> None:
+		if self.config_changed:
+			print("Writing changes to config file", self.config_file_path)
+			configfile = open(self.config_file_path, "w")
+			self.config_parser.write(configfile)

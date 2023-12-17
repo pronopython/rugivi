@@ -29,7 +29,13 @@
 ##############################################################################################
 #
 
-import os
+from rugivi.image_service.abstract_streamed_media import AbstractStreamedMedia
 
-def printModuleDir():
-	print(os.path.dirname(os.path.realpath(__file__)))
+
+class Frame:
+	def __init__(self, image=None) -> None:
+		self.image : AbstractStreamedMedia = image  # type: ignore
+		self.x_S : int = None # type: ignore
+		self.y_S : int = None # type: ignore
+		self.x_SL : int = None # type: ignore
+		self.y_SL : int = None # type: ignore

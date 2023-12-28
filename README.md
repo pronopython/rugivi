@@ -97,9 +97,9 @@ You can also export a world map:
 
 Clone this repository into a writeable directory.
 
-### 2. Install python tkinter
+### 2. Install python tkinter and pillow
 
-`sudo apt-get install python3-tk`
+`sudo apt-get install python3-tk python3-pil.imagetk`
 
 ### 3. Install RuGiVi via pip
 
@@ -198,6 +198,8 @@ Run `rugivi_configurator`:
 
 Change the entries to fit your setup.
 
+> :cherries: *You must save the settings on the first run of RuGiVi even if you change nothing here*
+
 |Setting      | Description                                                                              |
 |-----------------|------------------------------------------------------------------------------------|
 |Crawler root directory       | This is the root directory of all the pictures you want to explore within RuGiVi |
@@ -207,6 +209,8 @@ Change the entries to fit your setup.
 | Status font size | Font size of the grey status area|
 | FapTable parent dirs | See FapTables |
 | FapTable single dirs | See FapTables |
+
+> :cherries: *You must use a new World DB File or delete the old one when changing root directory*
 
 Make sure your database files are placed on a SSD drive!
 
@@ -253,6 +257,8 @@ You can watch this process or start traveling through the images world.
 |o                |Pause image server (troubleshooting)                                                |
 |p                |Pause crawler (troubleshooting)                                                     |
 |e                |Generate and export world map as png file                                           |
+
+To make `t` and `s` work, you must have the fapel-system installed and make sure, that the correct python executable is set in RuGiVis config file (this should work out of the box for Ubuntu and Windows but I could not check all possibilities).
 
 
 # Quitting RuGiVi
@@ -382,8 +388,8 @@ Note that you can only run World Overlook one time per RuGiVi Session. You need 
 | RuGiVi does not start| Try starting RuGiVi via console (with `rugivi`) and look at the error messages. Common reasons is a broken or incorrect config file. You can also try to define new world and thumb database files.|
 |Screen is black|Probably Edit mode is enabled, press middle mousebutton again|
 |Images are pixelated or just red    | RuGuVi is probably loading a lot of images and the ones you currently want to see are at a later position at the loader queue. Keep an eye on "Queue" in the information box (                                                       press `i` to show it) |
-|RuGiVi is slow               |   Loading takes time and RuGiVi loads a lot of data. See the Tips section for speed tips. |                                                          |
-|               |                                                             |
+|RuGiVi is slow               |   Loading takes time and RuGiVi loads a lot of data. See the Tips section for speed tips. |
+|Fapel-System keys (t and s) crash RuGiVi, despite the Fapel-System being installed      |   Check RuGiVi Config file if the correct python executable is mentioned under section `[control]`, `pythonexecutable=` |
 
 
 
@@ -399,6 +405,7 @@ Note that you can only run World Overlook one time per RuGiVi Session. You need 
 * Despite not changing anything, RuGiVi does not work on read-only media directories. This is because pygame image loader opens files with write access.
 * TIFF files may produce warnings which on Windows are opened as separate message boxes.
 * Big worlds (> 500,000 images) are not round or rectangular but have the shape of a plus sign ("+"), see big world map example on this page. This is due to the crawler placement algorithm, which is in alpha state.
+* Audio pops at startup (probably a pygame issue)
 
 # Technical Stuff
 
@@ -493,6 +500,19 @@ If you want to backup your config and database files, just make a copy of these 
 
 
 # Release Notes
+
+## v0.3.1-alpha
+
+### added
+
+- RuGiVi Configurator: A red labeled warning that you must use a different World DB File or delete the old one when changig the root directory
+- Animated "please wait" label showing as long as less than 10 pictures are loaded, because initial startup takes a few seconds and this especially puzzled new users since nothing was displayed.
+- Some technical topics / troubleshootings in readme
+
+### fixed
+
+- missing Pillow / PIL dependency during setup (added as a manual step for Ubuntu and in setup.py)
+- pressing Cancel in the root dir folder dialog crashed RuGiVi Configurator
 
 ## v0.3.0-alpha
 

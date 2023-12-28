@@ -95,7 +95,7 @@ class SelectionFolder(SelectionSingleItem):
 
 	def buttonClicked(self) -> None:
 		selected_folder = filedialog.askdirectory()
-		if selected_folder != "":
+		if selected_folder != "" and len(selected_folder) > 0:
 			selected_folder = os.path.abspath(selected_folder)
 			self.dirText.set(selected_folder)
 
@@ -269,7 +269,7 @@ class ConfigApp:
 
 
 		self.root = Tk()
-		self.root.geometry("800x460")
+		self.root.geometry("800x480")
 		self.root.title("RuGiVi Configurator")
 
 
@@ -288,33 +288,35 @@ class ConfigApp:
 		itfo = SelectionFile(frm,self.configParser,"Crawler World DB File","world","worldDB",filetypes)
 		itfo.getFrame().grid(column=0,row=2,ipadx=10,padx=10,sticky=W+E)
 
-		Label(frm, text="Thumb Database settings").grid(column=0, row=3,sticky=W)
+		Label(frm, text="You must use a new World DB File or delete the old one when changing root directory", fg="red").grid(column=0, row=3,sticky=W)
+
+		Label(frm, text="Thumb Database settings").grid(column=0, row=4,sticky=W)
 
 		itfo = SelectionFile(frm,self.configParser,"Thumb DB File","thumbs","thumbDB",filetypes)
-		itfo.getFrame().grid(column=0,row=4,ipadx=10,padx=10,sticky=W+E)
+		itfo.getFrame().grid(column=0,row=5,ipadx=10,padx=10,sticky=W+E)
 
 
-		Label(frm, text="GUI settings").grid(column=0, row=5,sticky=W)
+		Label(frm, text="GUI settings").grid(column=0, row=6,sticky=W)
 
 		itfo = SelectionBoolean(frm,self.configParser,"Reverse Scroll Wheel Zoom","control","reversescrollwheelzoom")
-		itfo.getFrame().grid(column=0,row=6,ipadx=10,padx=10,sticky=W+E)
-
-		itfo = SelectionInteger(frm,self.configParser,"Status font size","fonts","statusfontsize")
 		itfo.getFrame().grid(column=0,row=7,ipadx=10,padx=10,sticky=W+E)
 
+		itfo = SelectionInteger(frm,self.configParser,"Status font size","fonts","statusfontsize")
+		itfo.getFrame().grid(column=0,row=8,ipadx=10,padx=10,sticky=W+E)
 
-		Label(frm, text="FapTables").grid(column=0, row=8,sticky=W)
+
+		Label(frm, text="FapTables").grid(column=0, row=9,sticky=W)
 
 		itfo = SelectionMultiFolder(frm,self.configParser,"FapTable parent dirs","fapTableParentDirs","dir")
-		itfo.getFrame().grid(column=0,row=9,ipadx=10,padx=9,sticky=W+E)
+		itfo.getFrame().grid(column=0,row=10,ipadx=10,padx=9,sticky=W+E)
 
 		itfo = SelectionMultiFolder(frm,self.configParser,"FapTable single dirs","fapTableSingleDirs","dir")
-		itfo.getFrame().grid(column=0,row=10,ipadx=10,padx=10,sticky=W+E)
+		itfo.getFrame().grid(column=0,row=11,ipadx=10,padx=10,sticky=W+E)
 
 		bframe = Frame(frm)
 		Button(bframe, text="Save and exit", command=self.actionSaveAndExit).grid(column=0,row=0,ipadx=5,sticky=E)
 		Button(bframe, text="Exit without save", command=self.actionExitWithoutSave).grid(column=1,row=0,ipadx=5,sticky=E)
-		bframe.grid(column=0,row=11,sticky=E)
+		bframe.grid(column=0,row=12,sticky=E)
 
 
 

@@ -29,7 +29,7 @@
 from setuptools import setup
 
 setup(name='rugivi',
-	version='0.3.0-alpha',
+	version='0.3.1-alpha',
 	description='RuGiVi - Adult Media Landscape Browser',
 	url='https://github.com/pronopython/rugivi',
 	author='pronopython',
@@ -39,7 +39,7 @@ setup(name='rugivi',
 	package_data={'rugivi':['*']},
 	include_package_data=True,
 	zip_safe=False,
-	install_requires=['pygame','psutil','numpy','sqlitedict','pyshortcuts'],
+	install_requires=['pygame','psutil','numpy','sqlitedict','pyshortcuts','Pillow'],
 	entry_points={
         'gui_scripts': [
             'rugivi_configurator=rugivi.rugivi_configurator:main'

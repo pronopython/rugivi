@@ -112,7 +112,7 @@ class RugiviMainApp:
 			root.withdraw()
 			messagebox.showinfo(
 				"Not configured",
-				"Please configure RuGiVi with the RuGiVi Configurator before running it",
+				"Please configure RuGiVi and save the settings with the RuGiVi Configurator before running it",
 			)
 			sys.exit(0)
 
@@ -788,6 +788,21 @@ class RugiviMainApp:
 					status.writeln("      t tag, s add to set, e generate map png")
 
 				status.draw(self.display)
+
+
+			if self.image_server._total_database_loaded + self.image_server._total_disk_loaded < 10:
+
+				font = pygame.font.SysFont("monospace", 40)
+				label = font.render(
+					"starting... please wait!", True, (255, 255, 255)
+				)
+				self.display.blit(label, (30, 30))
+				mp = int(time() % 4)
+				label2 = font.render((" "*mp) + ".", True, (255, 80, 207))
+				self.display.blit(label2, (30, 80))
+				#pygame.display.flip()
+
+
 
 			if self.running == False:
 				self.display.fill((100, 100, 100, 0))

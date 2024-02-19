@@ -63,7 +63,8 @@ class AbstractStreamedMedia:
 	def __init__(self) -> None:
 		self.state = AbstractStreamedMedia.STATE_NEW
 
-		self.original_file_path: str = None  # type: ignore
+		self.original_file_path: str = None  # type: ignore # always the path to an image (user file or cache image surrogate)
+		self._extended_dictionary = None
 
 		self.aspect_ratio: float = 1.0  # width * aspectRatio = height
 		self.width = 0
@@ -135,3 +136,16 @@ class AbstractStreamedMedia:
 
 	def set_ordered_quality(self, quality) -> None:
 		self._ordered_quality = quality
+
+	def set_extended_attribute(self, key, value):
+		if self._extended_dictionary == None:
+			self._extended_dictionary = {}
+		self._extended_dictionary[key] = value
+
+	def get_extended_attribute(self, key):
+		if self._extended_dictionary == None:
+			return None
+		if key in self._extended_dictionary:
+			return self._extended_dictionary[key]
+		else:
+			return None

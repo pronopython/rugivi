@@ -45,7 +45,7 @@ from sqlitedict import SqliteDict
 
 class ChunkSaveObject:
 	def __init__(self) -> None:
-		self.spots_filepath_list : list = []
+		self.spots_filepath_list: list = []
 		""" a list of spots filepath flattened from matrix row by row """
 
 		self.number_of_empty_spots = 0
@@ -53,6 +53,8 @@ class ChunkSaveObject:
 		self.y_C = 0
 		self.top_spot_x_S = 0
 		self.top_spot_y_S = 0
+
+		self.extended_dictionaries: list = []
 
 	def __save_numpy_spots(self, numpy_spots_matrix) -> None:
 		self.spots_filepath_list = []
@@ -65,15 +67,47 @@ class ChunkSaveObject:
 						continue
 				self.spots_filepath_list.append("")
 
+	def __save_extended_dictionaries(self, numpy_spots_matrix) -> None:
+		self.extended_dictionaries = []
+		has_extended_dictionary = False
+		for y_SL in range(0, World.CHUNK_SIZE):
+			for x_SL in range(0, World.CHUNK_SIZE):
+				frame: Frame = numpy_spots_matrix[x_SL, y_SL]
+				if frame != None:
+					if frame.image != None:
+						if (
+							frame.image._extended_dictionary != None
+							and len(frame.image._extended_dictionary) > 0
+						):
+							has_extended_dictionary = True
+							self.extended_dictionaries.append(
+								frame.image._extended_dictionary
+							)
+							continue
+				self.extended_dictionaries.append({})
+		if not has_extended_dictionary:
+			self.extended_dictionaries = []
+
 	def to_tuple(self) -> tuple:
-		return (
-			self.x_C,
-			self.y_C,
-			self.top_spot_x_S,
-			self.top_spot_y_S,
-			self.number_of_empty_spots,
-			self.spots_filepath_list,
-		)
+		if len(self.extended_dictionaries) > 0:
+			return (
+				self.x_C,
+				self.y_C,
+				self.top_spot_x_S,
+				self.top_spot_y_S,
+				self.number_of_empty_spots,
+				self.spots_filepath_list,
+				self.extended_dictionaries,
+			)
+		else:
+			return (
+				self.x_C,
+				self.y_C,
+				self.top_spot_x_S,
+				self.top_spot_y_S,
+				self.number_of_empty_spots,
+				self.spots_filepath_list,
+			)
 
 	def from_tupel(self, tupel) -> None:
 		self.spots_filepath_list = tupel[5]
@@ -82,10 +116,13 @@ class ChunkSaveObject:
 		self.y_C = tupel[1]
 		self.top_spot_x_S = tupel[2]
 		self.top_spot_y_S = tupel[3]
+		if len(tupel) > 6:  # an extended dictionary was saved
+			self.extended_dictionaries = tupel[6]
 
 	def from_chunk(self, chunk: Chunk) -> None:
-		self.spots_filepath_list = None # type: ignore
+		self.spots_filepath_list = None  # type: ignore
 		self.__save_numpy_spots(chunk._spots_matrix)
+		self.__save_extended_dictionaries(chunk._spots_matrix)
 		self.number_of_empty_spots = chunk._number_of_empty_spots
 		self.x_C = chunk.x_C
 		self.y_C = chunk.y_C
@@ -144,11 +181,21 @@ class WorldDatabase(AbstractWorldDatabase):
 		newChunk = Chunk(self.world, x_C, y_C)
 		for y_SL in range(0, World.CHUNK_SIZE):
 			for x_SL in range(0, World.CHUNK_SIZE):
-				original_file_path = chunk_save_object.spots_filepath_list[(y_SL * World.CHUNK_SIZE) + x_SL]
+				original_file_path = chunk_save_object.spots_filepath_list[
+					(y_SL * World.CHUNK_SIZE) + x_SL
+				]
 				if original_file_path != "":
 					streamed_image = self.image_server.create_streamed_image(
 						original_file_path, StreamedImage.QUALITY_THUMB
 					)
+
+					if len(chunk_save_object.extended_dictionaries) > 0:
+						streamed_image._extended_dictionary = (
+							chunk_save_object.extended_dictionaries[
+								(y_SL * World.CHUNK_SIZE) + x_SL
+							]
+						)
+
 					newChunk.set_frame_at_SL(Frame(streamed_image), x_SL, y_SL)
 		return newChunk
 

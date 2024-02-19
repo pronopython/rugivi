@@ -29,6 +29,9 @@
 ##############################################################################################
 #
 
+import hashlib
+import math
+import os
 from typing import NoReturn
 import pygame
 
@@ -37,6 +40,9 @@ from time import sleep, time
 from queue import Queue
 
 from rugivi.fap_table.fap_table import FapTable
+from rugivi.image_service.image_cache import ImageCache
+from rugivi.image_service.streamed_mockup import StreamedMockup
+from rugivi.image_service.video_still_generator import VideoStillGenerator
 from .abstract_streamed_media import AbstractStreamedMedia
 
 from .streamed_image import StreamedImage
@@ -56,6 +62,8 @@ class ImageServerConduit:
 		self.waiting = True
 		self.image_server: ImageServer = image_server
 		self.image_server_database: ImageServerDatabase = None  # type: ignore
+		self.video_still_generator: VideoStillGenerator = None  # type: ignore
+		self.image_cache: ImageCache = None  # type: ignore
 
 	def conduit_loader_loop(self) -> NoReturn:
 		original_surface: pygame.surface.Surface = None  # type: ignore
@@ -113,30 +121,70 @@ class ImageServerConduit:
 					self.media.state == StreamedImage.STATE_NEW
 					or self.media.state == StreamedImage.STATE_READY_AND_RELOADING
 				):
-					# load image from disk
 
-					try:
-						original_surface = pygame.image.load(
-							self.media.original_file_path
-						).convert()
-
-						self.media.state = StreamedImage.STATE_LOADED
-
-						self.image_server._total_disk_loaded += 1
-					except pygame.error as message:
-						print(
-							"Conduit " + str(self.name) + " cannot load ",
-							self.media.original_file_path,
+					# image is a surrogate for a video file
+					if self.media.get_extended_attribute("video_still_uuid") != None:
+						# print("Creating cached file for",self.media.get_extended_attribute("video_file"))
+						uuid_name = self.media.get_extended_attribute(
+							"video_still_uuid"
 						)
-						self.media.state = StreamedImage.STATE_ERROR_ON_LOAD
-						self.waiting = True
-					except FileNotFoundError as e:
-						print(
-							"Conduit " + str(self.name) + " cannot load ",
-							self.media.original_file_path,
-						)
-						self.media.state = StreamedImage.STATE_ERROR_ON_LOAD
-						self.waiting = True
+
+						if not self.image_cache.file_exists(uuid_name):
+
+							# cache miss, create a video still frame
+
+							# The cache name was already generated through the crawler (along with the uuid),
+							# so that the image already has original_file_path set to the cache file (the
+							# surrogate file).
+							# Here it is *again* calculated, to make absolutly sure that cache_filename
+							# will *always* contain a cache-dir filename. Writing over
+							# original_file_path can destroy original collection images if somehow
+							# there is a bug.
+							cache_filename = self.image_cache.get_filename_for_uuid(
+								uuid_name
+							)
+							self.image_cache.generate_path_for_uuid(
+								uuid_name
+							)  # make sure path exists
+							video_still_created = (
+								self.video_still_generator.create_and_write_still_image(
+									self.media.get_extended_attribute("video_file"),
+									self.media.get_extended_attribute("video_position"),
+									cache_filename,
+								)
+							)
+							if video_still_created:
+								self.media.original_file_path = cache_filename
+							else:
+								self.media.state = StreamedImage.STATE_ERROR_ON_LOAD
+								self.waiting = True
+
+					if self.media.state != StreamedImage.STATE_ERROR_ON_LOAD:
+
+						# load image from disk
+
+						try:
+							original_surface = pygame.image.load(
+								self.media.original_file_path
+							).convert()
+
+							self.media.state = StreamedImage.STATE_LOADED
+
+							self.image_server._total_disk_loaded += 1
+						except pygame.error as message:
+							print(
+								"Conduit " + str(self.name) + " cannot load ",
+								self.media.original_file_path,
+							)
+							self.media.state = StreamedImage.STATE_ERROR_ON_LOAD
+							self.waiting = True
+						except FileNotFoundError as e:
+							print(
+								"Conduit " + str(self.name) + " cannot load ",
+								self.media.original_file_path,
+							)
+							self.media.state = StreamedImage.STATE_ERROR_ON_LOAD
+							self.waiting = True
 
 				if not self.waiting and self.media.state == StreamedImage.STATE_LOADED:
 					# gather info
@@ -159,7 +207,7 @@ class ImageServerConduit:
 							h = int(w * self.media.aspect_ratio)
 							self.media._surfaces[q][
 								StreamedImage.SURFACE_SURFACE
-							] = pygame.transform.scale(original_surface, (w, h))
+							] = pygame.transform.smoothscale(original_surface, (w, h))
 							self.media._surfaces[q][StreamedImage.SURFACE_BYTES] = (
 								w * h * self.media.bytes_per_pixel
 							)
@@ -191,7 +239,7 @@ class ImageServerConduit:
 							and self.media.get_available_quality()
 							>= StreamedImage.QUALITY_THUMB
 						):
-							self.image_server_database.add_image_thumb(self.media) # type: ignore
+							self.image_server_database.add_image_thumb(self.media)  # type: ignore
 
 					self.waiting = True
 					self.media.drawn_view_height = -1
@@ -228,13 +276,25 @@ class ImageServer:
 	HOUSEKEEPING_EVERY_SECONDS = 300
 	MEMCHECK_EVERY_SECONDS = 120
 	HOUSEKEEPING_THRESHOLD = [-1, 5000, 150, 20]
-	HOUSEKEEPING_MAX_MEM_MB_THRESHOLD = 2000  # TODO needs to be implemented, see further down
+	HOUSEKEEPING_MAX_MEM_MB_THRESHOLD = (
+		2000  # TODO needs to be implemented, see further down
+	)
 	QUALITY_PIXEL_SIZE = [32, 128, 1000]  # thumb, grid, screen
 
-	def __init__(self, number_of_conduits, thumbDbFile) -> None:
+	def __init__(
+		self,
+		number_of_conduits,
+		thumbDbFile,
+		cache_base_dir,
+		number_of_video_conduits=-1,
+	) -> None:
 		self.conduits: list[ImageServerConduit] = []
 		for c in range(0, number_of_conduits):
 			self.conduits.append(ImageServerConduit(c, self))
+		if number_of_video_conduits == -1:
+			self.number_of_video_conduits = number_of_conduits
+		else:
+			self.number_of_video_conduits = number_of_video_conduits
 		self.thread_loader = None
 		self.thread_view_fetcher = None
 		self.media_queue: Queue[AbstractStreamedMedia] = Queue()
@@ -257,9 +317,17 @@ class ImageServer:
 
 		self.paused = False
 
+		self.image_cache = ImageCache(cache_base_dir)
+
+		# self.video_still_generator = VideoStillGenerator(jpg_quality=65, max_dimension=(800,800),remove_letterbox=True)
+		self.video_still_generator = VideoStillGenerator()
+		# self.video_still_generator = VideoStillGenerator(jpg_quality=95,remove_letterbox=True)
+
 		self.image_server_database = ImageServerDatabase(thumbDbFile)
 		for conduit in self.conduits:
 			conduit.image_server_database = self.image_server_database
+			conduit.video_still_generator = self.video_still_generator
+			conduit.image_cache = self.image_cache
 
 	def start(self) -> None:
 		for conduit in self.conduits:
@@ -289,9 +357,19 @@ class ImageServer:
 
 			if not self.paused:
 				if self.media_queue.qsize() > 0:
-					for conduit in self.conduits:
+					for conduit_number, conduit in enumerate(self.conduits):
 						if not conduit.is_busy():
 							media = self.media_queue.get()
+
+							if (
+								media.get_extended_attribute("video_still_uuid") != None
+								and not self.image_cache.file_exists(
+									media.get_extended_attribute("video_still_uuid")
+								)
+								and conduit_number >= self.number_of_video_conduits
+							):
+								self.media_queue.put(media)
+								continue
 
 							# TODO make dependend on ram
 							media._load_quality = media._ordered_quality
@@ -352,87 +430,100 @@ class ImageServer:
 		self.fetcher_loop_running = True
 		while self.running:
 			sleep(0.2)
+			# print("server view fetcher loop")
 			for view in self.views:
 				sleep(1)
 
-				# did view move at all?
+				spot_width = math.ceil(World.SPOT_SIZE / view.height)
 
-				view_chunk_x1_C = view.world.convert_S_to_C(view.world_x1_S)
-				view_chunk_y1_C = view.world.convert_S_to_C(view.world_y1_S)
-				view_chunk_x2_C = view.world.convert_S_to_C(view.world_x2_S)
-				view_chunk_y2_C = view.world.convert_S_to_C(view.world_y2_S)
+				if (
+					# view.height / 4
+					# <= World.SPOT_SIZE
+					spot_width
+					>= ImageServer.QUALITY_PIXEL_SIZE[StreamedImage.QUALITY_GRID]
+				):
 
-				# based on height, fetch surrounding chunks also
+					view_chunk_x1_C = view.world.convert_S_to_C(view.world_x1_S)
+					view_chunk_y1_C = view.world.convert_S_to_C(view.world_y1_S)
+					view_chunk_x2_C = view.world.convert_S_to_C(view.world_x2_S)
+					view_chunk_y2_C = view.world.convert_S_to_C(view.world_y2_S)
 
-				for x_C in range(view_chunk_x1_C, view_chunk_x2_C + 1):
-					for y_C in range(view_chunk_y1_C, view_chunk_y2_C + 1):
-						chunk: Chunk = view.world.get_chunk_at_C(x_C, y_C)
+					# based on height, fetch surrounding chunks also
+					# print(view_chunk_x1_C,view_chunk_y1_C,"-",view_chunk_x2_C,view_chunk_y2_C)
+					for x_C in range(view_chunk_x1_C, view_chunk_x2_C + 1):
+						for y_C in range(view_chunk_y1_C, view_chunk_y2_C + 1):
+							chunk: Chunk = view.world.get_chunk_at_C(x_C, y_C)
+							# print("view fetcher: chunk",chunk.x_C,chunk.y_C)
+							# sleep(0.02)
+							for x_SL in range(0, World.CHUNK_SIZE):
+								# sleep(0.002)
+								for y_SL in range(0, World.CHUNK_SIZE):
+									# sleep(0.00001)
+									frame = chunk.get_frame_at_SL(x_SL, y_SL)
 
-						for x_SL in range(0, World.CHUNK_SIZE):
-							for y_SL in range(0, World.CHUNK_SIZE):
-								frame = chunk.get_frame_at_SL(x_SL, y_SL)
+									if frame != None:
+										image = frame.image
 
-								if frame != None:
-									image = frame.image
+										if isinstance(image, StreamedMockup):
+											continue
 
-									needed_quality = StreamedImage.QUALITY_THUMB
-
-									if (
-										view.height
-										< World.SPOT_SIZE
-										/ ImageServer.QUALITY_PIXEL_SIZE[
-											StreamedImage.QUALITY_THUMB
-										]
-									):
+										# needed_quality = StreamedImage.QUALITY_THUMB
 										needed_quality = StreamedImage.QUALITY_GRID
-									x_S = x_SL + chunk.top_spot_x_S
-									y_S = y_SL + chunk.top_spot_y_S
-									is_on_screen = (
-										(view.world_x1_S <= x_S)
-										and (x_S <= view.world_x2_S)
-										and (view.world_y1_S <= y_S)
-										and (y_S <= view.world_y2_S)
-									)
-									if (
-										is_on_screen
-										and view.height
-										<= World.SPOT_SIZE
-										/ (
-											ImageServer.QUALITY_PIXEL_SIZE[
+
+										# if (
+										# 	view.height / 4
+										# 	< World.SPOT_SIZE
+										# 	/ ImageServer.QUALITY_PIXEL_SIZE[
+										# 		StreamedImage.QUALITY_THUMB
+										# 	]
+										# ):
+										# 	needed_quality = StreamedImage.QUALITY_GRID
+										x_S = x_SL + chunk.top_spot_x_S
+										y_S = y_SL + chunk.top_spot_y_S
+										is_on_screen = (
+											(view.world_x1_S <= x_S)
+											and (x_S <= view.world_x2_S)
+											and (view.world_y1_S <= y_S)
+											and (y_S <= view.world_y2_S)
+										)
+										if (
+											is_on_screen
+											and spot_width
+											> ImageServer.QUALITY_PIXEL_SIZE[
 												StreamedImage.QUALITY_SCREEN
 											]
 											/ 2
-										)
-									):
-										needed_quality = StreamedImage.QUALITY_SCREEN
-
-									if (
-										is_on_screen
-										and view.height
-										< World.SPOT_SIZE
-										/ (
-											ImageServer.QUALITY_PIXEL_SIZE[
+										):
+											needed_quality = (
 												StreamedImage.QUALITY_SCREEN
-											]
-										)
-									):
-										needed_quality = StreamedImage.QUALITY_ORIGINAL
-
-									if (
-										image.state == StreamedImage.STATE_READY
-										and image.get_available_quality()
-										< needed_quality
-									):
-										image.set_ordered_quality(needed_quality)
+											)
 
 										if (
-											image.get_ordered_quality()
-											> image.get_available_quality()
+											is_on_screen
+											and spot_width
+											> ImageServer.QUALITY_PIXEL_SIZE[
+												StreamedImage.QUALITY_SCREEN
+											]
 										):
-											image.state = (
-												StreamedImage.STATE_READY_AND_RELOADING
+											needed_quality = (
+												StreamedImage.QUALITY_ORIGINAL
 											)
-											self.media_queue.queue.insert(0, image)
+
+										if (
+											image.state == StreamedImage.STATE_READY
+											and image.get_available_quality()
+											< needed_quality
+										):
+											image.set_ordered_quality(needed_quality)
+
+											if (
+												image.get_ordered_quality()
+												> image.get_available_quality()
+											):
+												image.state = (
+													StreamedImage.STATE_READY_AND_RELOADING
+												)
+												self.media_queue.queue.insert(0, image)
 
 				# load peek
 				frame = view.world.get_frame_at_S(
@@ -441,7 +532,8 @@ class ImageServer:
 				if frame != None:
 					image = frame.image
 					if image != None:
-
+						if isinstance(image, StreamedMockup):
+							continue
 						if (
 							image.state == StreamedImage.STATE_READY
 							and image.get_available_quality()
@@ -459,7 +551,7 @@ class ImageServer:
 			# load current Fap Table in HiRes
 			for fapTable_view in self.fap_table_views:
 
-				current_fapTable : FapTable = fapTable_view.fap_table
+				current_fapTable: FapTable = fapTable_view.fap_table
 				if current_fapTable != None and current_fapTable.is_displayed:
 					for card in current_fapTable.cards:
 						if card.image != None:
@@ -519,6 +611,24 @@ class ImageServer:
 		image.set_ordered_quality(quality)
 		self.streamed_images.append(image)
 		self.media_queue.put(image)
+		return image
+
+	def create_streamed_mockup(self, path, color_string="", color=None):
+		image = StreamedMockup()
+		image.set_original_file_path(path)
+		# self.media_queue.put(image)
+		if color != None:
+			image.average_color = color
+		else:
+			md5 = hashlib.md5(str(color_string).encode()).hexdigest()
+			r = int(md5[0:2], 16)
+			g = int(md5[2:4], 16)
+			b = int(md5[4:6], 16)
+			image.average_color = (r, g, b)  # type: ignore
+
+		image.state = AbstractStreamedMedia.STATE_READY
+		self._available_quality = AbstractStreamedMedia.QUALITY_COLOR
+		self.streamed_images.append(image)
 		return image
 
 	def get_number_of_images(self) -> int:

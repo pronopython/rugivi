@@ -31,7 +31,7 @@
 
 
 import abc
-from tkinter import Tk
+from tkinter import Button, Menu, Misc, Text, Tk
 from tkinter import Label
 from tkinter import Entry
 import tkinter.simpledialog
@@ -80,6 +80,28 @@ class TkinterWrapper:
 		pass
 
 
+class TkinterRightClick:
+	def __init__(self, root) -> None:
+		self.root = root
+		self._make_textmenu()
+
+	def _make_textmenu(self):
+		self.the_menu = Menu(self.root, tearoff=0)
+		self.the_menu.add_command(label="Copy")
+
+	def _show_textmenu(self, event):
+		e_widget = event.widget
+		self.the_menu.entryconfigure(
+			"Copy", command=lambda: e_widget.event_generate("<<Copy>>")
+		)
+		self.the_menu.tk.call("tk_popup", self.the_menu, event.x_root, event.y_root)
+
+	def bind_textmenu(self):
+		# to be called AFTER all Entry + Text elements are placed
+		self.root.bind_class("Entry", "<Button-3><ButtonRelease-3>", self._show_textmenu)
+		self.root.bind_class("Text", "<Button-3><ButtonRelease-3>", self._show_textmenu)
+
+
 class Dialog_xy_tkwindow(tkinter.simpledialog.Dialog):
 	def body(self, master) -> Any:
 
@@ -126,3 +148,38 @@ class Dialog_save_file(TkinterWrapper):
 		if str(result) == "()":
 			result = ""
 		self.result = result
+
+
+class Dialog_copy_clipboard_tkwindow(tkinter.simpledialog.Dialog):
+	def __init__(self, parent, text, title=None) -> None:
+		self.text = text
+		super().__init__(parent, title)
+
+	def body(self, master) -> Any:
+
+		rcm = TkinterRightClick(master)
+
+		self.t1 = Text(master, height=20, width=100)
+		self.t1.insert(tkinter.END, self.text)
+		self.t1.grid(row=0, column=0)
+
+		rcm.bind_textmenu()
+
+		return self.t1  # initial focus
+
+	def apply(self) -> None:
+		pass
+
+
+class Dialog_copy_clipboard(TkinterWrapper):
+	def __init__(self, title, text) -> None:
+		self.title = title
+		self.text = text
+		super().__init__()
+
+	def createDialogWindow(self) -> Dialog_copy_clipboard_tkwindow:
+		dialog = Dialog_copy_clipboard_tkwindow(self.root, self.text, self.title)
+		return dialog
+
+	def setResult(self) -> Any:
+		self.result = None

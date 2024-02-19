@@ -32,6 +32,8 @@
 import os
 from pathlib import Path
 import configparser
+import sys
+from tkinter import messagebox
 from . import dir_helper as dir_helper
 
 
@@ -59,15 +61,19 @@ class ConfigFileHandler:
 		return self.config_parser
 
 	def get(self, group, key) -> str:
+		self.check_key(group, key)
 		return self.config_parser.get(group, key)
 
 	def get_int(self, group, key) -> int:
+		self.check_key(group, key)
 		return int(self.config_parser.get(group, key))
 
 	def get_boolean(self, group, key) -> bool:
+		self.check_key(group, key)
 		return self.config_parser.get(group, key) in ("True", "TRUE", "true", "1")
 
 	def get_directory_path(self, group, key, ifEmpty="") -> str:
+		self.check_key(group, key)
 		path = self.get(group, key)
 		if path == "":
 			return ifEmpty.replace("~", self.homedir)
@@ -85,3 +91,14 @@ class ConfigFileHandler:
 			print("Writing changes to config file", self.config_file_path)
 			configfile = open(self.config_file_path, "w")
 			self.config_parser.write(configfile)
+
+	def check_key(self, group, key):
+		try:
+			self.config_parser.get(group, key)
+		except configparser.NoOptionError:
+			errortext = 'Error: The following group / key combination is missing in your RuGiVi config "'+self.config_file_path+'":\n\n['+group+']\n'+key+'\n\nLook into rugivi dir of git repo for a default config file!'
+			print("Config entry missing!")
+			print(errortext)
+			messagebox.showerror('Config entry missing!', errortext)
+			sys.exit()
+

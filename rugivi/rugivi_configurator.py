@@ -30,6 +30,8 @@
 #
 
 import abc
+import configparser
+import platform
 
 from tkinter import Tk
 from tkinter import Label
@@ -49,7 +51,8 @@ from tkinter import Listbox
 from tkinter import Scrollbar
 
 import tkinter as tk
-#import tkinter.ttk as ttk
+
+# import tkinter.ttk as ttk
 from tkinter import filedialog
 import os
 from typing import NoReturn
@@ -60,9 +63,15 @@ from rugivi import dir_helper as dir_helper
 
 class SelectionSingleItem:
 	__metaclass__ = abc.ABCMeta
-	
-	def __init__(self,configParser:config_file_handler.ConfigFileHandler,description,configGroup,configItem) -> None:
-		self.configParser:config_file_handler.ConfigFileHandler = configParser
+
+	def __init__(
+		self,
+		configParser: config_file_handler.ConfigFileHandler,
+		description,
+		configGroup,
+		configItem,
+	) -> None:
+		self.configParser: config_file_handler.ConfigFileHandler = configParser
 		self.description = description
 		self.configGroup = configGroup
 		self.configItem = configItem
@@ -75,23 +84,31 @@ class SelectionSingleItem:
 		pass
 
 
-
 class SelectionFolder(SelectionSingleItem):
-
-	def __init__(self,parent,configParser:config_file_handler.ConfigFileHandler,description,configGroup, configItem) -> None:
-		super().__init__(configParser,description, configGroup, configItem)
+	def __init__(
+		self,
+		parent,
+		configParser: config_file_handler.ConfigFileHandler,
+		description,
+		configGroup,
+		configItem,
+	) -> None:
+		super().__init__(configParser, description, configGroup, configItem)
 
 		self.frame = Frame(parent)
-		self.frame.columnconfigure(1,weight=1)
-		Label(self.frame, text=description).grid(column=0, row=0,sticky=W)
-		self.dirText = StringVar(self.frame,self.initValue)
-		self.dirText.trace_add("write",self.valueChanged)
-		Entry(self.frame,textvariable=self.dirText).grid(column=1, row=0,sticky=W+E)
-		Button(self.frame, text="Select", command=self.buttonClicked).grid(column=2,row=0,sticky=E)
+		self.frame.columnconfigure(1, weight=1)
+		Label(self.frame, text=description).grid(column=0, row=0, sticky=W)
+		self.dirText = StringVar(self.frame, self.initValue)
+		self.dirText.trace_add("write", self.valueChanged)
+		Entry(self.frame, textvariable=self.dirText).grid(column=1, row=0, sticky=W + E)
+		Button(self.frame, text="Select", command=self.buttonClicked).grid(
+			column=2, row=0, sticky=E
+		)
 
 	def loadInitValue(self) -> None:
-		self.initValue = self.configParser.get_directory_path(self.configGroup,self.configItem, "")
-
+		self.initValue = self.configParser.get_directory_path(
+			self.configGroup, self.configItem, ""
+		)
 
 	def buttonClicked(self) -> None:
 		selected_folder = filedialog.askdirectory()
@@ -99,124 +116,144 @@ class SelectionFolder(SelectionSingleItem):
 			selected_folder = os.path.abspath(selected_folder)
 			self.dirText.set(selected_folder)
 
-
-	def valueChanged(self,*args) -> None:
-		self.configParser.change_config()[self.configGroup][self.configItem] = self.dirText.get()
-
-
+	def valueChanged(self, *args) -> None:
+		self.configParser.change_config()[self.configGroup][
+			self.configItem
+		] = self.dirText.get()
 
 	def getFrame(self) -> Frame:
 		return self.frame
-
 
 
 class SelectionFile(SelectionSingleItem):
-
-	def __init__(self,parent,configParser,description,configGroup, configItem,filetypes) -> None:
-		super().__init__(configParser,description, configGroup, configItem)
+	def __init__(
+		self, parent, configParser, description, configGroup, configItem, filetypes
+	) -> None:
+		super().__init__(configParser, description, configGroup, configItem)
 
 		self.frame = Frame(parent)
-		self.frame.columnconfigure(1,weight=1)
+		self.frame.columnconfigure(1, weight=1)
 		self.filetypes = filetypes
-		Label(self.frame, text=description).grid(column=0, row=0,ipadx=5,sticky=W)
-		self.dirText = StringVar(self.frame,self.initValue)
-		self.dirText.trace_add("write",self.valueChanged)
-		Entry(self.frame,textvariable=self.dirText).grid(column=1, row=0,ipadx=5,sticky=W+E)
-		Button(self.frame, text="Select", command=self.buttonClicked).grid(column=2,row=0,ipadx=5,sticky=E)
+		Label(self.frame, text=description).grid(column=0, row=0, ipadx=5, sticky=W)
+		self.dirText = StringVar(self.frame, self.initValue)
+		self.dirText.trace_add("write", self.valueChanged)
+		Entry(self.frame, textvariable=self.dirText).grid(
+			column=1, row=0, ipadx=5, sticky=W + E
+		)
+		Button(self.frame, text="Select", command=self.buttonClicked).grid(
+			column=2, row=0, ipadx=5, sticky=E
+		)
 
 	def loadInitValue(self) -> None:
-		self.initValue = self.configParser.get_directory_path(self.configGroup,self.configItem, "")
+		self.initValue = self.configParser.get_directory_path(
+			self.configGroup, self.configItem, ""
+		)
 
 	def buttonClicked(self) -> None:
-		filename = filedialog.askopenfilename(filetypes = self.filetypes)
+		filename = filedialog.askopenfilename(filetypes=self.filetypes)
 		self.dirText.set(filename)
 		self.configParser.change_config()[self.configGroup][self.configItem] = filename
 
-	def valueChanged(self,*args) -> None:
-		self.configParser.change_config()[self.configGroup][self.configItem] = self.dirText.get()
+	def valueChanged(self, *args) -> None:
+		self.configParser.change_config()[self.configGroup][
+			self.configItem
+		] = self.dirText.get()
 
 	def getFrame(self) -> Frame:
 		return self.frame
 
 
-
 class SelectionBoolean(SelectionSingleItem):
-
-	def __init__(self,parent,configParser,description,configGroup, configItem) -> None:
-		super().__init__(configParser,description, configGroup, configItem)
+	def __init__(
+		self, parent, configParser, description, configGroup, configItem
+	) -> None:
+		super().__init__(configParser, description, configGroup, configItem)
 
 		self.frame = Frame(parent)
-		self.frame.columnconfigure(1,weight=1)
-		Label(self.frame, text=description).grid(column=0, row=0,ipadx=5,sticky=W)
-		self.button = Button(self.frame, text=str(self.initValue), command=self.buttonClicked)
-		self.button.grid(column=2,row=0,ipadx=5,sticky=E)
+		self.frame.columnconfigure(1, weight=1)
+		Label(self.frame, text=description).grid(column=0, row=0, ipadx=5, sticky=W)
+		self.button = Button(
+			self.frame, text=str(self.initValue), command=self.buttonClicked
+		)
+		self.button.grid(column=2, row=0, ipadx=5, sticky=E)
 		self.value = self.initValue
 
 	def loadInitValue(self) -> None:
-		self.initValue = self.configParser.get_boolean(self.configGroup,self.configItem)
+		self.initValue = self.configParser.get_boolean(
+			self.configGroup, self.configItem
+		)
 
 	def buttonClicked(self) -> None:
 		self.value = not self.value
 		self.button.configure(text=str(self.value))
-		self.configParser.change_config()[self.configGroup][self.configItem] = str(self.value)
-
+		self.configParser.change_config()[self.configGroup][self.configItem] = str(
+			self.value
+		)
 
 	def getFrame(self) -> Frame:
 		return self.frame
-
 
 
 class SelectionInteger(SelectionSingleItem):
-
-	def __init__(self,parent,configParser,description,configGroup, configItem) -> None:
-		super().__init__(configParser,description, configGroup, configItem)
+	def __init__(
+		self, parent, configParser, description, configGroup, configItem
+	) -> None:
+		super().__init__(configParser, description, configGroup, configItem)
 
 		self.frame = Frame(parent)
-		self.frame.columnconfigure(1,weight=1)
-		Label(self.frame, text=description).grid(column=0, row=0,ipadx=5,sticky=W)
-		self.dirText = StringVar(self.frame,str(self.initValue))
-		self.dirText.trace_add("write",self.valueChanged)
-		Entry(self.frame,textvariable=self.dirText).grid(column=1, row=0,ipadx=5,sticky=W+E)
+		self.frame.columnconfigure(1, weight=1)
+		Label(self.frame, text=description).grid(column=0, row=0, ipadx=5, sticky=W)
+		self.dirText = StringVar(self.frame, str(self.initValue))
+		self.dirText.trace_add("write", self.valueChanged)
+		Entry(self.frame, textvariable=self.dirText).grid(
+			column=1, row=0, ipadx=5, sticky=W + E
+		)
 
 	def loadInitValue(self) -> None:
-		self.initValue = self.configParser.get_int(self.configGroup,self.configItem)
+		self.initValue = self.configParser.get_int(self.configGroup, self.configItem)
 
-	def valueChanged(self,*args) -> None:
-		self.configParser.change_config()[self.configGroup][self.configItem] = self.dirText.get()
+	def valueChanged(self, *args) -> None:
+		self.configParser.change_config()[self.configGroup][
+			self.configItem
+		] = self.dirText.get()
 
 	def getFrame(self) -> Frame:
 		return self.frame
 
 
-
 class SelectionMultiItem(SelectionSingleItem):
-
-	def __init__(self,parent,configParser,description,configGroup,configItem) -> None:
-		super().__init__(configParser,description, configGroup, configItem)
+	def __init__(
+		self, parent, configParser, description, configGroup, configItem
+	) -> None:
+		super().__init__(configParser, description, configGroup, configItem)
 
 		self.frame = Frame(parent)
-		self.frame.columnconfigure(1,weight=1)
+		self.frame.columnconfigure(1, weight=1)
 
-		Label(self.frame, text=description).grid(column=0, row=0,rowspan=2,sticky=W)
+		Label(self.frame, text=description).grid(column=0, row=0, rowspan=2, sticky=W)
 
 		listboxframe = Frame(self.frame)
 
-		self.listbox = Listbox(listboxframe,height=5)
-		self.listbox.pack(side=LEFT,fill=BOTH,expand=YES)
-		#self.listbox.grid(column=1,row=0, rowspan=2,sticky=W+E)
+		self.listbox = Listbox(listboxframe, height=5)
+		self.listbox.pack(side=LEFT, fill=BOTH, expand=YES)
+		# self.listbox.grid(column=1,row=0, rowspan=2,sticky=W+E)
 
 		scrollbar = Scrollbar(listboxframe)
-		scrollbar.pack(side=RIGHT,fill=BOTH)
-		self.listbox.config(yscrollcommand = scrollbar.set)
-		scrollbar.config(command = self.listbox.yview)
+		scrollbar.pack(side=RIGHT, fill=BOTH)
+		self.listbox.config(yscrollcommand=scrollbar.set)
+		scrollbar.config(command=self.listbox.yview)
 
-		listboxframe.grid(column=1,row=0, rowspan=2,sticky=W+E)
-		
-		Button(self.frame, text="+", command=self.buttonClickedAdd).grid(column=2,row=0,sticky=E)
-		Button(self.frame, text="-", command=self.buttonClickedRemove).grid(column=2,row=1,sticky=E)
+		listboxframe.grid(column=1, row=0, rowspan=2, sticky=W + E)
+
+		Button(self.frame, text="+", command=self.buttonClickedAdd).grid(
+			column=2, row=0, sticky=E
+		)
+		Button(self.frame, text="-", command=self.buttonClickedRemove).grid(
+			column=2, row=1, sticky=E
+		)
 
 		for item in self.items:
-			self.listbox.insert(tk.END,item)
+			self.listbox.insert(tk.END, item)
 
 	def loadInitValue(self) -> None:
 		if len(self.configParser.items(self.configGroup)) > 0:
@@ -236,89 +273,166 @@ class SelectionMultiItem(SelectionSingleItem):
 
 	def valueChanged(self) -> None:
 		self.configParser.change_config()[self.configGroup].clear()
-		for pos, item in enumerate(self.listbox.get(0,tk.END)):
-			self.configParser.change_config()[self.configGroup][self.configItem+str(pos)] = item
-
-
+		for pos, item in enumerate(self.listbox.get(0, tk.END)):
+			self.configParser.change_config()[self.configGroup][
+				self.configItem + str(pos)
+			] = item
 
 
 class SelectionMultiFolder(SelectionMultiItem):
-
-
-	def __init__(self,parent,configParser,description,configGroup,configItem) -> None:
-		super().__init__(parent,configParser,description, configGroup, configItem)
-
+	def __init__(
+		self, parent, configParser, description, configGroup, configItem
+	) -> None:
+		super().__init__(parent, configParser, description, configGroup, configItem)
 
 	def buttonClickedAdd(self) -> None:
 		selected_folder = filedialog.askdirectory()
 		if selected_folder != ():
 			selected_folder = os.path.abspath(selected_folder)
-			self.listbox.insert(tk.END,selected_folder)
+			self.listbox.insert(tk.END, selected_folder)
 			self.valueChanged()
 
+
 class ConfigApp:
-
-
 	def __init__(self) -> None:
 
 		print("RuGiVi Configurator")
 
-
 		self.configDir = dir_helper.get_config_dir("RuGiVi")
-		self.configParser : config_file_handler.ConfigFileHandler = config_file_handler.ConfigFileHandler(os.path.join(self.configDir,"rugivi.conf"))
-
+		self.configParser: config_file_handler.ConfigFileHandler = (
+			config_file_handler.ConfigFileHandler(
+				os.path.join(self.configDir, "rugivi.conf")
+			)
+		)
+		
+		self.config_migrated = False
+		self.migrate_old_conf(self.configParser)
 
 		self.root = Tk()
-		self.root.geometry("800x480")
+		self.root.geometry("800x650")
 		self.root.title("RuGiVi Configurator")
 
-
 		frm = Frame(self.root)
-		frm.grid(sticky=N+S+W+E)
-		frm.columnconfigure(0,weight =1) 
+		frm.grid(sticky=N + S + W + E)
+		frm.columnconfigure(0, weight=1)
 
-		Label(frm, text="Crawler settings").grid(column=0, row=0,sticky=W)
+		row = 0
 
-		#ttk.Button(frm, text="Quit", command=root.destroy).grid(column=1, row=0)
-		itfo = SelectionFolder(frm,self.configParser,"Crawler root directory","world","crawlerRootDir")
-		itfo.getFrame().grid(column=0,row=1,ipadx=10,padx=10,sticky=W+E)
+		Label(frm, text="Crawler settings").grid(column=0, row=row, sticky=W)
+		row += 1
 
+		# ttk.Button(frm, text="Quit", command=root.destroy).grid(column=1, row=0)
+		itfo = SelectionFolder(
+			frm, self.configParser, "Crawler root directory", "world", "crawlerRootDir"
+		)
+		itfo.getFrame().grid(column=0, row=row, ipadx=10, padx=10, sticky=W + E)
+		row += 1
 
-		filetypes = (("SQLite files", "*.sqlite"),("All files", "*.*") )
-		itfo = SelectionFile(frm,self.configParser,"Crawler World DB File","world","worldDB",filetypes)
-		itfo.getFrame().grid(column=0,row=2,ipadx=10,padx=10,sticky=W+E)
+		filetypes = (("SQLite files", "*.sqlite"), ("All files", "*.*"))
+		itfo = SelectionFile(
+			frm,
+			self.configParser,
+			"Crawler World DB File",
+			"world",
+			"worldDB",
+			filetypes,
+		)
+		itfo.getFrame().grid(column=0, row=row, ipadx=10, padx=10, sticky=W + E)
+		row += 1
 
-		Label(frm, text="You must use a new World DB File or delete the old one when changing root directory", fg="red").grid(column=0, row=3,sticky=W)
+		Label(
+			frm,
+			text="You must use a new World DB File or delete the old one when changing root directory",
+			fg="red",
+		).grid(column=0, row=row, sticky=W)
+		row += 1
 
-		Label(frm, text="Thumb Database settings").grid(column=0, row=4,sticky=W)
+		Label(frm, text="Thumb Database settings").grid(column=0, row=row, sticky=W)
+		row += 1
 
-		itfo = SelectionFile(frm,self.configParser,"Thumb DB File","thumbs","thumbDB",filetypes)
-		itfo.getFrame().grid(column=0,row=5,ipadx=10,padx=10,sticky=W+E)
+		itfo = SelectionFile(
+			frm, self.configParser, "Thumb DB File", "thumbs", "thumbDB", filetypes
+		)
+		itfo.getFrame().grid(column=0, row=row, ipadx=10, padx=10, sticky=W + E)
+		row += 1
 
+		Label(frm, text="Video settings").grid(column=0, row=row, sticky=W)
+		row += 1
 
-		Label(frm, text="GUI settings").grid(column=0, row=6,sticky=W)
+		itfo = SelectionBoolean(
+			frm, self.configParser, "Enable video crawling", "world", "crawlvideos"
+		)
+		itfo.getFrame().grid(column=0, row=row, ipadx=10, padx=10, sticky=W + E)
+		row += 1
 
-		itfo = SelectionBoolean(frm,self.configParser,"Reverse Scroll Wheel Zoom","control","reversescrollwheelzoom")
-		itfo.getFrame().grid(column=0,row=7,ipadx=10,padx=10,sticky=W+E)
+		itfo = SelectionFolder(
+			frm,
+			self.configParser,
+			"Video still cache directory",
+			"cache",
+			"cacherootdir",
+		)
+		itfo.getFrame().grid(column=0, row=row, ipadx=10, padx=10, sticky=W + E)
+		row += 1
 
-		itfo = SelectionInteger(frm,self.configParser,"Status font size","fonts","statusfontsize")
-		itfo.getFrame().grid(column=0,row=8,ipadx=10,padx=10,sticky=W+E)
+		itfo = SelectionBoolean(
+			frm, self.configParser, "Play video with VLC", "videoplayback", "vlcenabled"
+		)
+		itfo.getFrame().grid(column=0, row=row, ipadx=10, padx=10, sticky=W + E)
+		row += 1
 
+		Label(frm, text="GUI settings").grid(column=0, row=row, sticky=W)
+		row += 1
 
-		Label(frm, text="FapTables").grid(column=0, row=9,sticky=W)
+		itfo = SelectionBoolean(
+			frm,
+			self.configParser,
+			"Reverse Scroll Wheel Zoom",
+			"control",
+			"reversescrollwheelzoom",
+		)
+		itfo.getFrame().grid(column=0, row=row, ipadx=10, padx=10, sticky=W + E)
+		row += 1
 
-		itfo = SelectionMultiFolder(frm,self.configParser,"FapTable parent dirs","fapTableParentDirs","dir")
-		itfo.getFrame().grid(column=0,row=10,ipadx=10,padx=9,sticky=W+E)
+		itfo = SelectionInteger(
+			frm, self.configParser, "Status font size", "fonts", "statusfontsize"
+		)
+		itfo.getFrame().grid(column=0, row=row, ipadx=10, padx=10, sticky=W + E)
+		row += 1
 
-		itfo = SelectionMultiFolder(frm,self.configParser,"FapTable single dirs","fapTableSingleDirs","dir")
-		itfo.getFrame().grid(column=0,row=11,ipadx=10,padx=10,sticky=W+E)
+		Label(frm, text="FapTables").grid(column=0, row=row, sticky=W)
+		row += 1
+
+		itfo = SelectionMultiFolder(
+			frm, self.configParser, "FapTable parent dirs", "fapTableParentDirs", "dir"
+		)
+		itfo.getFrame().grid(column=0, row=row, ipadx=10, padx=9, sticky=W + E)
+		row += 1
+
+		itfo = SelectionMultiFolder(
+			frm, self.configParser, "FapTable single dirs", "fapTableSingleDirs", "dir"
+		)
+		itfo.getFrame().grid(column=0, row=row, ipadx=10, padx=10, sticky=W + E)
+		row += 1
+
+		if self.config_migrated:
+			Label(
+				frm,
+				text="Config migrated & new items added. Make sure to save the config!",
+				fg="red",
+			).grid(column=0, row=row, sticky=E)
+			row += 1
+
 
 		bframe = Frame(frm)
-		Button(bframe, text="Save and exit", command=self.actionSaveAndExit).grid(column=0,row=0,ipadx=5,sticky=E)
-		Button(bframe, text="Exit without save", command=self.actionExitWithoutSave).grid(column=1,row=0,ipadx=5,sticky=E)
-		bframe.grid(column=0,row=12,sticky=E)
-
-
+		Button(bframe, text="Save and exit", command=self.actionSaveAndExit).grid(
+			column=0, row=0, ipadx=5, sticky=E
+		)
+		Button(
+			bframe, text="Exit without save", command=self.actionExitWithoutSave
+		).grid(column=1, row=0, ipadx=5, sticky=E)
+		bframe.grid(column=0, row=row, sticky=E)
+		row += 1
 
 		frm.pack(expand=True, fill=BOTH)
 
@@ -334,7 +448,70 @@ class ConfigApp:
 		exit()
 
 
+	def is_windows(self) -> bool:
+		if platform.system() == "Windows":
+			return True
+		else:
+			return False
+
+	def _migrate_check_and_add_entry(self, configParser, group, key, initvalue):
+		entry_present = True
+		section_missing = False
+		try:
+			configParser.config_parser.get(group, key)
+		except configparser.NoOptionError:
+			entry_present = False
+		except configparser.NoSectionError:
+			entry_present = False
+			section_missing = True
+		if not entry_present:
+			print("Migrate old config to new one: adding [",group,"]",key,"=",initvalue)
+			if section_missing:
+				self.configParser.change_config().add_section(group)
+			self.configParser.change_config()[group][key] = initvalue
+			self.config_migrated = True
+
+	def migrate_old_conf(self, configParser):
+
+		# older => v0.4.0
+
+		self._migrate_check_and_add_entry(configParser, "world","crawlerExcludeDirList","")
+		self._migrate_check_and_add_entry(configParser, "world","crawlvideos","False")
+
+		self._migrate_check_and_add_entry(configParser, "world","crossshapegrow","False")
+		self._migrate_check_and_add_entry(configParser, "world","nodiagonalgrow","True")
+		self._migrate_check_and_add_entry(configParser, "world","organicgrow","True")
+		self._migrate_check_and_add_entry(configParser, "world","reachoutantmode","True")
+
+		if self.is_windows():
+			self._migrate_check_and_add_entry(configParser, "cache","cacherootdir","~\\AppData\\Roaming\\RuGiVi\\cache")
+		else:
+			self._migrate_check_and_add_entry(configParser, "cache","cacherootdir","~/.local/share/rugivi/cache")
+
+		self._migrate_check_and_add_entry(configParser, "videoframe","jpgquality","65")
+		self._migrate_check_and_add_entry(configParser, "videoframe","maxsizeenabled","False")
+		self._migrate_check_and_add_entry(configParser, "videoframe","maxsize","800")
+		self._migrate_check_and_add_entry(configParser, "videoframe","removeletterbox","True")
+
+		if self.is_windows():
+			self._migrate_check_and_add_entry(configParser, "videoplayback","vlcbinary","C:/Program Files/VideoLAN/VLC/vlc.exe")
+		else:
+			self._migrate_check_and_add_entry(configParser, "videoplayback","vlcbinary","vlc")
+
+		self._migrate_check_and_add_entry(configParser, "videoplayback","vlcenabled","False")
+		self._migrate_check_and_add_entry(configParser, "videoplayback","vlcseekposition","True")
+
+		if self.is_windows():
+			self._migrate_check_and_add_entry(configParser, "control","pythonexecutable","python")
+		else:
+			self._migrate_check_and_add_entry(configParser, "control","pythonexecutable","python3")
+
+		self._migrate_check_and_add_entry(configParser, "debug","vlcverbose","False")
+		self._migrate_check_and_add_entry(configParser, "debug","cv2verbose","False")
+		self._migrate_check_and_add_entry(configParser, "debug","mockupimages","False")
+
+
+
 def main() -> None:
 	app = ConfigApp()
 	app.run()
-

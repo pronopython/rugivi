@@ -272,43 +272,51 @@ class View:
 									spot_height_P,
 								),
 							)
-							if spot_width_P < 16:
+							if spot_width_P < 5:
 								pass
 							
 							elif spot_width_P <= 32:
 								surface :Surface = image.get_surface(AbstractStreamedMedia.QUALITY_THUMB) # type: ignore
 
-								scaled_image_surface = pygame.transform.scale(
-									surface,
-									(image_drawing_width_P, image_drawing_height_P),
-								)
-								display.blit(
-									scaled_image_surface,
-									(
-										current_screen_x_PL + image_offset_x_P,
-										current_screen_y_PL + image_offset_y_P,
-									),
-								)
-								self.performance_images_drawn = (
-									self.performance_images_drawn + 1
-								)
+								if surface != None:
+									scaled_image_surface = pygame.transform.smoothscale(
+										surface,
+										(image_drawing_width_P, image_drawing_height_P),
+									)
+									display.blit(
+										scaled_image_surface,
+										(
+											current_screen_x_PL + image_offset_x_P,
+											current_screen_y_PL + image_offset_y_P,
+										),
+									)
+									self.performance_images_drawn = (
+										self.performance_images_drawn + 1
+									)
 							else:
 								surface :Surface = image.get_surface() # type: ignore
-
-								scaled_image_surface = pygame.transform.scale(
-									surface,
-									(image_drawing_width_P, image_drawing_height_P),
-								)
-								display.blit(
-									scaled_image_surface,
-									(
-										current_screen_x_PL + image_offset_x_P,
-										current_screen_y_PL + image_offset_y_P,
-									),
-								)
-								self.performance_images_drawn = (
-									self.performance_images_drawn + 1
-								)
+								if surface != None:
+									# only smoothscale to small destination size, big dest. sizes take too long
+									if spot_width_P < 256: # TODO hard coded pixels
+										scaled_image_surface = pygame.transform.smoothscale(
+											surface,
+											(image_drawing_width_P, image_drawing_height_P),
+										)
+									else:
+										scaled_image_surface = pygame.transform.scale(
+											surface,
+											(image_drawing_width_P, image_drawing_height_P),
+										)
+									display.blit(
+										scaled_image_surface,
+										(
+											current_screen_x_PL + image_offset_x_P,
+											current_screen_y_PL + image_offset_y_P,
+										),
+									)
+									self.performance_images_drawn = (
+										self.performance_images_drawn + 1
+									)
 
 		elapsed_time = int((time_ns() - start_time) / 1000000)
 
@@ -431,19 +439,20 @@ class View:
 							)
 
 						surface: pygame.surface.Surface = image.get_surface() # type: ignore
-						scaled_image_surface = pygame.transform.scale(
-							surface, (image_drawing_width_P, image_drawing_height_P)
-						)
-						display.blit(
-							scaled_image_surface,
-							(
-								current_screen_x_PL + spot_width_P + (thickness * 2),
-								current_screen_y_PL,
-							),
-						)
-						self.performance_images_drawn = (
-							self.performance_images_drawn + 1
-						)
+						if surface != None:
+							scaled_image_surface = pygame.transform.smoothscale(
+								surface, (image_drawing_width_P, image_drawing_height_P)
+							)
+							display.blit(
+								scaled_image_surface,
+								(
+									current_screen_x_PL + spot_width_P + (thickness * 2),
+									current_screen_y_PL,
+								),
+							)
+							self.performance_images_drawn = (
+								self.performance_images_drawn + 1
+							)
 
 						pygame.draw.rect(
 							display,

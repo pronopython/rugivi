@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+#
 ##############################################################################################
 #
 # RuGiVi - Adult Media Landscape Browser
@@ -25,32 +27,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 ##############################################################################################
+#
 
-from setuptools import setup
+import abc
 
-setup(name='rugivi',
-	version='0.4.0-alpha',
-	description='RuGiVi - Adult Media Landscape Browser',
-	url='https://github.com/pronopython/rugivi',
-	author='pronopython',
-	author_email='pronopython@proton.me',
-	license='GNU GENERAL PUBLIC LICENSE V3',
-	packages=['rugivi','rugivi.crawlers.first_organic','rugivi.fap_table','rugivi.image_database_service','rugivi.image_service','rugivi.world_database_service','rugivi.world_things','rugivi.exports'],
-	package_data={'rugivi':['*']},
-	include_package_data=True,
-	zip_safe=False,
-	install_requires=['pygame','psutil','numpy','sqlitedict','pyshortcuts','Pillow','opencv-python-headless'],
-	entry_points={
-        'gui_scripts': [
-            'rugivi_configurator=rugivi.rugivi_configurator:main'
-		],
-        'console_scripts': [
-            'rugivi_printModuleDir=rugivi.print_module_dir:printModuleDir',
-            'rugivi=rugivi.rugivi:main',
-			'rugivi_image_cache_maintenance=rugivi.rugivi_image_cache_maintenance:main'
-		]
-    	}
-    )
+class AbstractCacheFilenameGenerator:
 
-#print("the exit is here")
 
+	def __init__(self) -> None:
+		pass
+
+	@abc.abstractmethod
+	def generate_new_cache_uuid_and_filename(self) -> (str,str): # type: ignore
+		pass

@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+#
 ##############################################################################################
 #
 # RuGiVi - Adult Media Landscape Browser
@@ -25,32 +27,33 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 ##############################################################################################
+#
 
-from setuptools import setup
+from rugivi.image_service.abstract_streamed_media import AbstractStreamedMedia
 
-setup(name='rugivi',
-	version='0.4.0-alpha',
-	description='RuGiVi - Adult Media Landscape Browser',
-	url='https://github.com/pronopython/rugivi',
-	author='pronopython',
-	author_email='pronopython@proton.me',
-	license='GNU GENERAL PUBLIC LICENSE V3',
-	packages=['rugivi','rugivi.crawlers.first_organic','rugivi.fap_table','rugivi.image_database_service','rugivi.image_service','rugivi.world_database_service','rugivi.world_things','rugivi.exports'],
-	package_data={'rugivi':['*']},
-	include_package_data=True,
-	zip_safe=False,
-	install_requires=['pygame','psutil','numpy','sqlitedict','pyshortcuts','Pillow','opencv-python-headless'],
-	entry_points={
-        'gui_scripts': [
-            'rugivi_configurator=rugivi.rugivi_configurator:main'
-		],
-        'console_scripts': [
-            'rugivi_printModuleDir=rugivi.print_module_dir:printModuleDir',
-            'rugivi=rugivi.rugivi:main',
-			'rugivi_image_cache_maintenance=rugivi.rugivi_image_cache_maintenance:main'
-		]
-    	}
-    )
 
-#print("the exit is here")
+class StreamedMockup(AbstractStreamedMedia):
+	def __init__(self):
+		super().__init__()
+		self._surface = None
+		self._scaledSurface = None
+		self.mode = None
 
+	def get_surface(self, quality=None):
+		return None
+
+	def get_memory_usage_in_bytes(
+		self, quality: int = AbstractStreamedMedia.QUALITY_ALL
+	) -> int:
+		return 13
+
+	def get_number_of_surfaces_loaded_in_ram(
+		self, quality: int = AbstractStreamedMedia.QUALITY_ALL
+	) -> int:
+		return 0
+
+	def increment_age(self) -> None:
+		pass
+
+	def unload_except_thumb(self) -> None:
+		pass

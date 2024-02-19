@@ -61,9 +61,14 @@ class Selection:
 		self.frame = self.world.get_frame_at_S(self.x_S, self.y_S)
 		if self.frame != None:
 			self.image = self.frame.image  # type: ignore
+		else:
+			self.image = None # type: ignore
 
 	def get_selected_file(self) -> Optional[str]:
 		if self.image != None:
-			return self.image.original_file_path
+			if self.image.get_extended_attribute("video_file") != None:
+				return self.image.get_extended_attribute("video_file")
+			else:
+				return self.image.original_file_path
 		else:
 			return None

@@ -482,6 +482,13 @@ Multiple directories are seperated with a `;`.
 
 > :cherries: *This feature is currently not supported by the configurator. You have to edit the config manually.*
 
+
+# Tips
+
+* Speed up loading thumbs and images from the Queue: The queue can easily reach 50000 pictures / thumbs at once when zooming out. Switching to FapelTable by pressing middle mousebutton stops the drawing of the world
+
+* You can speed up everything by using a fast SSD and a lot of RAM. When running inside a virtual machine make sure the machine has enough virtual processors, a lot of RAM and its disk files are on SSDs.
+
 # Troubleshooting
 
 |Problem        |Solution                                                     |
@@ -494,14 +501,6 @@ Multiple directories are seperated with a `;`.
 |Fapel-System keys (t and s) crash RuGiVi, despite the Fapel-System being installed      |   Check RuGiVi Config file if the correct python executable is mentioned under section `[control]`, `pythonexecutable=` |
 |Crash and `FileNotFoundError: [Errno 2] No such file or directory: 'vlc'` when pressing `n`| You have playback via VLC enabled but it is not installed or the path to vlc binary (vlc.exe on Windows) is wrong. Change vlc binary path in rugivi.conf|
 |Config entry missing! Error: The following group / key combination is missing in your RuGiVi config... | The shown config entry is missing in your config file. Please add it manually in your rugivi.conf. Look into rugivi dir of git repo for a default config file. You can also run `rugivi_configurator` to add missing entries.|
-
-# Tips
-
-* Speed up loading thumbs and images from the Queue: The queue can easily reach 50000 pictures / thumbs at once when zooming out. Switching to FapelTable by pressing middle mousebutton stops the drawing of the world
-
-* You can speed up everything by using a fast SSD and a lot of RAM. When running inside a virtual machine make sure the machine has enough virtual processors, a lot of RAM and its disk files are on SSDs.
-
-# Troubleshooting
 
 ## Debug video still generation and playback
 

@@ -29,9 +29,12 @@
 ##############################################################################################
 #
 
+import configparser
 import os
 import pathlib
 import sys
+
+from rugivi.rugivi_configurator import ConfigApp
 
 
 # Import pygame, hide welcome message because it messes with
@@ -102,22 +105,39 @@ class RugiviMainApp:
 		self.tagDir = ""
 		self.cache_base_dir = "./cache"
 
-		self.configDir = dir_helper.get_config_dir("RuGiVi")
-		self.configParser = config_file_handler.ConfigFileHandler(
-			os.path.join(self.configDir, "rugivi.conf")
-		)
+		configurator_run = False
 
-		self.configured = self.configParser.get_boolean("configuration", "configured")
+		self.configured = False
 
-		if not self.configured:
-			root = tkinter.Tk()
-			root.withdraw()
-			messagebox.showinfo(
-				"Not configured",
-				"Please configure RuGiVi and save the settings with the RuGiVi Configurator before running it",
-			)
-			sys.exit(0)
+		while not self.configured:
+			self.configured = dir_helper.is_config_file_present("RuGiVi","rugivi.conf")
 
+			if self.configured:
+				self.configDir = dir_helper.get_config_dir("RuGiVi")
+				self.configParser = config_file_handler.ConfigFileHandler(
+					os.path.join(self.configDir, "rugivi.conf")
+				)
+
+				try:
+					self.configured = self.configured and self.configParser.get_boolean("configuration", "configured")
+				except configparser.NoSectionError:
+					self.configured = False
+
+			if not self.configured and configurator_run:
+				sys.exit() # Cancel was pressed in configurator
+
+			if not self.configured and not configurator_run:
+				#root = tkinter.Tk()
+				#root.withdraw()
+				#messagebox.showinfo(
+				#	"Not configured",
+				#	"Please configure RuGiVi and apply the settings in the following dialog.",
+				#)
+
+				app = ConfigApp(apply_and_start=True)
+				app.run()
+
+				configurator_run = True
 
 
 		self.worldDbFile = self.configParser.get_directory_path(

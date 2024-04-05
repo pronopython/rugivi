@@ -29,8 +29,9 @@
 from setuptools import setup
 
 setup(name='rugivi',
-	version='0.4.1-alpha',
+	version='0.5.0-alpha.post1',
 	description='RuGiVi - Adult Media Landscape Browser',
+	long_description='RuGiVi enables you to fly over your image and video collection and view thousands of images and video frames at once. Zoom in and out from one image to small thumbnails with your mousewheel in seconds. All images are grouped as you have them on your disk and arranged in a huge landscape. RuGiVi can work with hundred thousand of images at once.',
 	url='https://github.com/pronopython/rugivi',
 	author='pronopython',
 	author_email='pronopython@proton.me',

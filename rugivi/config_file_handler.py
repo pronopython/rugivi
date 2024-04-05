@@ -32,17 +32,22 @@
 import os
 from pathlib import Path
 import configparser
+import pathlib
 import sys
 from tkinter import messagebox
 from . import dir_helper as dir_helper
 
 
 class ConfigFileHandler:
-	def __init__(self, configFilePath) -> None:
+	def __init__(self, configFilePath, create_if_missing=False) -> None:
 		self.config_file_path = configFilePath
 
 		self.homedir = dir_helper.get_home_dir()
 		self.config_file_path = dir_helper.expand_home_dir(self.config_file_path)
+
+		if create_if_missing and not os.path.isfile(self.config_file_path):
+			pathlib.Path(os.path.dirname(self.config_file_path)).mkdir(parents=True, exist_ok=True)
+			open(self.config_file_path, 'a').close()
 
 		self.create_config_parser_and_load_config()
 		self.config_changed = False

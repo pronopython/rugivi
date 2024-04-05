@@ -1,6 +1,20 @@
-# RuGiVi - Adult media landscape browser
+
+![](img/rugivi_title_800.png)
+
+<h1 align="center"> RuGiVi - Adult media landscape browser </h1>
+
 
 RuGiVi enables you to fly over your image and video collection and view thousands of images and video frames at once. Zoom in and out from one image to small thumbnails with your mousewheel in seconds. All images are grouped as you have them on your disk and arranged in a huge landscape. RuGiVi can work with hundred thousand of images at once.
+
+<div align="center"> <font size="+2">
+
+[Install for Windows](#windows-installation) &nbsp;&nbsp;&nbsp;&nbsp; [Install for Linux](#ubuntu-linux-installation)
+
+</font></div>
+
+## Screenshots
+
+![](img/7.jpg)
 
 RuGiVi integrates fully into the [Fapel-System](https://github.com/pronopython/fapel-system), so you can travel trough your collection and tag images as you fly over them!
 
@@ -8,7 +22,7 @@ Fly over thumbnails and zoom in on any image anytime in an instant!
 
 > :eggplant: :sweat_drops: *Note: All sample images on this page are censored*
 
-![](img/7.jpg)
+
 
 
 Image Landscape generation from your directory structure:
@@ -94,125 +108,59 @@ You can also export a world map:
 
 # Installation
 
-
 ## Ubuntu Linux Installation
 
-### 1. Clone this repository
+Install python tkinter and pillow
 
-Download or clone the [latest release](https://github.com/pronopython/rugivi/releases/latest/) into a writeable directory.
+	```bash
+	sudo apt-get install python3-tk python3-pil.imagetk
+	```
 
-### 2. Install python tkinter and pillow
+install RuGiVi via pip, run
 
-`sudo apt-get install python3-tk python3-pil.imagetk`
+	```bash
+	pip install rugivi
+	```
+and start RuGiVi
 
-### 3. Install RuGiVi via pip
+	```bash
+	rugivi
+	```
 
-In the repo's root run
-
-`chmod +x install_ubuntu.sh`
-
-`./install_ubuntu.sh`
-
-It installs RuGiVi via Python's PIP and creates start menu entries.
-
-> :cherries: *Do not run the install_ubuntu.sh as root (sudo), as it would create config files for root user and not for you*
-
-### 4. Configure RuGiVi
-
-Proceed with [Configure RuGiVi](#configure-rugivi) (you need to do this!)
-
-## Ubuntu Linux Upgrade
-
-If you upgrade from a previous version of RuGiVi, follow these steps.
-
-Note that it is advised to backup your databases (see further below).
-
-### 1. Clone this repository
-
-Download or clone the [latest release](https://github.com/pronopython/rugivi/releases/latest/) into a writeable directory.
-
-### 2. Uninstall old version with pip
-
-Run
-
-`pip uninstall rugivi`
-
-to uninstall the old version, but leave config file and database intact.
-
-### 3. Install RuGiVi via pip
-
-Run
-
-`pip install .`
-
-in the repository root (the one containing the `setup.py` file)
-
-### 4. Configure RuGiVi
-
-Proceed with [Configure RuGiVi](#configure-rugivi) (you need to do this!)
+RuGiVi will open up its configurator at the first start, see [Configure RuGiVi](#configure-rugivi).
 
 ## Windows Installation
 
+Download and install Python 3: [https://www.python.org/downloads/windows/](https://www.python.org/downloads/windows/)
 
-### 1. Clone or download this repo
+Open a command window (press Windows+R then type cmd.exe and start it)
 
-Download or clone the [latest release](https://github.com/pronopython/rugivi/releases/latest/) into a writeable directory.
+Type and run
 
-### 2. Install Python
+	```
+	pip install rugivi
+	```
 
-Download and install Python 3
+after that start rugivi, in the command window run:
 
-[https://www.python.org/downloads/windows/](https://www.python.org/downloads/windows/)
+	```
+	rugivi
+	```
 
-
-### 3. Install RuGiVi via pip
-
-Start (doubleclick) `install_windows.bat`
-
-It installs RuGiVi via Python's PIP and creates the start menu entries.
-
-
-### 4. Configure RuGiVi
-
-Proceed with [Configure RuGiVi](#configure-rugivi) (you need to do this, because it migrates your config file!)
-
-
-## Windows Upgrade
-
-If you upgrade from a previous version of RuGiVi, follow these steps.
-
-Note that it is advised to backup your databases (see further below).
-
-### 1. Clone this repository
-
-Download or clone the [latest release](https://github.com/pronopython/rugivi/releases/latest/) into a writeable directory.
-
-### 2. Run upgrade batch file
-
-Doubleclick
-
-`upgrade_windows_installation.bat`
-
-to uninstall the old version, but leave config file and database intact and then automatically install the new version.
-
-### 3. Configure RuGiVi
-
-Proceed with [Configure RuGiVi](#configure-rugivi) (you need to do this, because it migrates your config file!)
+RuGiVi will open up its configurator at the first start, see [Configure RuGiVi](#configure-rugivi).
+You can create start menu entries with the configurator.
 
 # Configure RuGiVi
 
+After starting rugivi for the first time, you must configure the locations of various files.
 
-Run `rugivi_configurator`:
+If you want to get started and just run RuGiVi, just change the blue entries!
 
-![](img/202401125.png)
-
-Change the entries to fit your setup.
-
-> :cherries: *You must save the settings on the first run of RuGiVi even if you change nothing here*
+![](img/configurator.png)
 
 |Setting      | Description                                                                              |
 |-----------------|------------------------------------------------------------------------------------|
-|Crawler root directory       | This is the root directory of all the pictures you want to explore within RuGiVi |
+|Images & videos root directory| This is the root directory of all the pictures and videos you want to explore within RuGiVi |
 |Crawler World DB File | This is the database file the "world" (the position of all files on the screen) is saved to|
 |Thumb DB File| The Database containing all thumbnails. *This can be several GB in size!*|
 |Enable video crawling|When "true", RuGiVi will also parse video files|
@@ -222,18 +170,31 @@ Change the entries to fit your setup.
 | Status font size | Font size of the grey status area|
 | FapTable parent dirs | See FapTables |
 | FapTable single dirs | See FapTables |
+| create start menu entries | Check if you want to have RuGiVi as icon in your start menu |
 
 > :cherries: *You must use a new World DB File or delete the old one when changing root directory*
 
-> :cherries: *rugivi_configurator migrates your old config file when you upgrade from a previous version of RuGiVi. Make sure to press "save and exit" even when you do not change settings yourself!*
+> :cherries: *rugivi_configurator migrates your old config file when you upgrade from a previous version of RuGiVi. Make sure to press "Apply and exit" even when you do not change settings yourself!*
 
 Make sure your database files are placed on a SSD drive!
+
+To open the configurator again later, open a terminal / command window (under Windows press Windows+R then type cmd.exe and start it) and run
+
+```
+rugivi_configurator
+```
 
 # Start RuGiVi
 
 You can start RuGiVi via the start menu entry.
 
 ![](img/2301.png)
+
+or via console / command window, just run:
+
+	```
+	rugivi
+	```
 
 ![](img/2303.png)
 
@@ -750,6 +711,24 @@ You can report errors through a [GitHub issue](https://github.com/pronopython/ru
 Don't want to use GitHub? You can also contact me via email: pronopython@proton.me If you want to contact me anonymously, create yourself a burner email account.
 
 # Release Notes
+
+## v0.5.0-alpha
+
+### added
+
+- PyPi Support: RuGiVi can now be installed via pip (PyPi) directly
+
+### changed
+
+- rugivi starts rugivi_configurator if necessary (because of PyPi support)
+- rugivi_configurator now creates a complete config file if necessary (because of PyPi support)
+- rugivi_configurator creates start menu entries if desired (because of PyPi support)
+
+## v0.4.1-alpha
+
+### fixed
+
+- install now requires specific versions of modules
 
 ## v0.4.0-alpha
 

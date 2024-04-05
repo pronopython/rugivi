@@ -112,20 +112,20 @@ You can also export a world map:
 
 Install python tkinter and pillow
 
-	```bash
-	sudo apt-get install python3-tk python3-pil.imagetk
-	```
+```bash
+sudo apt-get install python3-tk python3-pil.imagetk
+```
 
 install RuGiVi via pip, run
 
-	```bash
-	pip install rugivi
-	```
+```bash
+pip install rugivi
+```
 and start RuGiVi
 
-	```bash
-	rugivi
-	```
+```bash
+rugivi
+```
 
 RuGiVi will open up its configurator at the first start, see [Configure RuGiVi](#configure-rugivi).
 
@@ -137,15 +137,15 @@ Open a command window (press Windows+R then type cmd.exe and start it)
 
 Type and run
 
-	```
-	pip install rugivi
-	```
+```
+pip install rugivi
+```
 
 after that start rugivi, in the command window run:
 
-	```
-	rugivi
-	```
+```
+rugivi
+```
 
 RuGiVi will open up its configurator at the first start, see [Configure RuGiVi](#configure-rugivi).
 You can create start menu entries with the configurator.
@@ -192,9 +192,9 @@ You can start RuGiVi via the start menu entry.
 
 or via console / command window, just run:
 
-	```
-	rugivi
-	```
+```
+rugivi
+```
 
 ![](img/2303.png)
 
@@ -594,7 +594,9 @@ RuGiVi comes with a small commandline tool to clean up the cache.
 
 When you are **not running RuGiVi**, run
 
-`rugivi_image_cache_maintenance`
+```bash
+rugivi_image_cache_maintenance
+```
 
 to gather information about the cache status (*nothing will be changed yet!*):
 
@@ -616,7 +618,9 @@ In this example 530 of 1530 files can be deleted.
 
 Run it again with the parameter `-c` to actually clean the cache:
 
-`rugivi_image_cache_maintenance -c`
+```bash
+rugivi_image_cache_maintenance -c
+```
 
 All orphant files will be moved to a `trash_` directory:
 

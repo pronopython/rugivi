@@ -673,7 +673,7 @@ You can customize how the world is layed out via settings in rugivi.conf (not su
 | Setting |Default| Description |
 |---|---|--|
 |crossshapegrow| `False`|`True` = Shape world like a cross. `False` = Shape world like a ball. Earlier versions of RuGiVi had a bug that resulted in a world shaped like a cross / plus sign instead of a round world.|
-|nodiagonalgrow| `True`| `True` = Pictures of a set a placed only top/bottom/left/right, never diagonal.|
+|nodiagonalgrow| `True`| `True` = Pictures of a set are placed only top/bottom/left/right, never diagonal.|
 |organicgrow| `True`| `True` = Picture sets are more sponge-like|
 |reachoutantmode| `True`| `True` = Sometimes sets are grown like a spike reaching out from the center|
 
@@ -715,6 +715,16 @@ You can report errors through a [GitHub issue](https://github.com/pronopython/ru
 Don't want to use GitHub? You can also contact me via email: pronopython@proton.me If you want to contact me anonymously, create yourself a burner email account.
 
 # Release Notes
+
+## v0.5.1-alpha
+
+### changed
+
+- Crawler does not crawl dot directories anymore (hidden folders)
+
+### fixed
+
+- Fixed permanent unload of images after housekeeping (happened around 30 mins of runtime)
 
 ## v0.5.0-alpha
 

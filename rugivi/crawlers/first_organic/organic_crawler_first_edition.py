@@ -181,6 +181,10 @@ class OrganicCrawlerFirstEdition:
 				sleep(1)
 				self.status = "paused"
 
+			if self.running == False:
+				self.crawler_loop_running = False
+				return
+
 			self.__pause_for_image_queue()
 
 			##############################################################################
@@ -190,6 +194,12 @@ class OrganicCrawlerFirstEdition:
 			self.status = "crawling for next dir"
 
 			current_dir_absolute_path = Path(current_dir).absolute()
+
+			if os.path.basename(os.path.normpath(current_dir_absolute_path)).startswith("."):
+				# hidden dir (started with ".")
+				self.excludeDirList.append(str(current_dir_absolute_path))
+				continue
+
 			if str(current_dir_absolute_path) in self.dir_and_start_spot:
 				# already visited according to database
 				sleep(0.2)
@@ -203,7 +213,7 @@ class OrganicCrawlerFirstEdition:
 					skip_dir = True
 					break
 			if skip_dir:
-				sleep(0.2)
+				sleep(0.0002)
 				continue
 
 			# populating dirAndStartSpot when this is crawler is run for the first time
@@ -494,7 +504,7 @@ class OrganicCrawlerFirstEdition:
 			# Looking for a start spot
 			# Start spots are selected out of border spots (these are always empty)
 			##############################################################################
-
+			self.status = "finding biome (start spot from border spots)"
 			# fallback: fill start_spot no matter what will happen
 			start_spot = random.choice(tuple(self.border_spots))
 
@@ -578,7 +588,7 @@ class OrganicCrawlerFirstEdition:
 			##############################################################################
 			# See if enough empty spots are next to the start spot
 			##############################################################################
-
+			self.status = "finding biome (gather empty spots [0/"+str(neededSpots)+"])"
 			stack_with_empty_spots_to_check: list = [start_spot]
 			# stack always holds neighbouring empty spots to be checked
 			# if they are not that far away so that spots are grouped together
@@ -673,6 +683,8 @@ class OrganicCrawlerFirstEdition:
 				if len(found_empty_spots) >= neededSpots:
 					found_enough_empty_spots = True
 					break
+
+				self.status = "finding biome (gather empty spots ["+str(len(found_empty_spots))+"/"+str(neededSpots)+"])"
 
 				# ... and now look for its neighbours
 				(start_spot_x_S, start_spot_y_S) = currentSpot

@@ -93,7 +93,7 @@ class StreamedImage(AbstractStreamedMedia):
 
 	def unload_except_thumb(self) -> None:
 		if self.get_available_quality() >= StreamedImage.QUALITY_GRID:
-			self._availableQuality = StreamedImage.QUALITY_THUMB
+			self._available_quality = StreamedImage.QUALITY_THUMB
 
 			self._surfaces[1][StreamedImage.SURFACE_SURFACE] = None
 			self._surfaces[2][StreamedImage.SURFACE_SURFACE] = None

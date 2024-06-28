@@ -69,8 +69,7 @@ class View:
 
 		self.draw_grid = True
 
-		self.update_matrix_side_length = 4
-		self.update_matrix_side_length = 6
+		self.update_matrix_side_length = 3
 		for y in range(0, self.update_matrix_side_length):
 			for x in range(0, self.update_matrix_side_length):
 				self.update_matrix.append((x, y))

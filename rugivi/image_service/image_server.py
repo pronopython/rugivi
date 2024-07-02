@@ -440,7 +440,7 @@ class ImageServer:
 					# view.height / 4
 					# <= World.SPOT_SIZE
 					spot_width
-					>= ImageServer.QUALITY_PIXEL_SIZE[StreamedImage.QUALITY_GRID]
+					>= (ImageServer.QUALITY_PIXEL_SIZE[StreamedImage.QUALITY_GRID] / 3)
 				):
 
 					view_chunk_x1_C = view.world.convert_S_to_C(view.world_x1_S)
@@ -456,9 +456,9 @@ class ImageServer:
 							# print("view fetcher: chunk",chunk.x_C,chunk.y_C)
 							# sleep(0.02)
 							for x_SL in range(0, World.CHUNK_SIZE):
-								# sleep(0.002)
+								sleep(0.00002)
 								for y_SL in range(0, World.CHUNK_SIZE):
-									# sleep(0.00001)
+									sleep(0.00001)
 									frame = chunk.get_frame_at_SL(x_SL, y_SL)
 
 									if frame != None:
@@ -492,7 +492,7 @@ class ImageServer:
 											> ImageServer.QUALITY_PIXEL_SIZE[
 												StreamedImage.QUALITY_SCREEN
 											]
-											/ 2
+											/ 4
 										):
 											needed_quality = (
 												StreamedImage.QUALITY_SCREEN

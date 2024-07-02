@@ -474,16 +474,14 @@ cv2verbose=True
 ```
 
 ## Known bugs and limitations
-* Quit does not work everytime. The crawler then runs in an infinite loop.
 * Sometimes the garbage collection is not run or runs too late and memory is depleted (rugivi can easily grab gigabytes of RAM of course). You then get an out-of-memory error.
 * Despite not changing anything, RuGiVi does not work on read-only media directories. This is because pygame image loader opens files with write access.
 * TIFF files may produce warnings which on Windows are opened as separate message boxes.
 * Audio pops at startup (probably a pygame issue)
-* High res versions are unloaded despite being displayed (pictures end up showing as a colored square when zoomed beyond thumb size)
 
 # Technical Stuff
 
-Every Image is placed into a Frame with Spot Size of 4096 x 4096 Pixels, which is Heigth = 1
+Every Image is placed into a Frame with Spot Size of 4096 x 4096 Pixels, which is height = 1
 
 A Frame is placed onto a spot.
 
@@ -716,6 +714,14 @@ Don't want to use GitHub? You can also contact me via email: pronopython@proton.
 
 # Release Notes
 
+## v0.5.2-alpha
+
+### fixed
+
+- Higher resolution images are now fetched at correct zoom level (that means much earlier when zooming)
+- RuGiVi no more freezes for seconds when zooming out (Freeze resulted in a warning from the OS)
+- Spot search for new images is faster when searching for a place for many images
+
 ## v0.5.1-alpha
 
 ### changed
@@ -725,6 +731,7 @@ Don't want to use GitHub? You can also contact me via email: pronopython@proton.
 ### fixed
 
 - Fixed permanent unload of images after housekeeping (happened around 30 mins of runtime)
+- Crawler does not block anymore when closing RuGiVi
 
 ## v0.5.0-alpha
 

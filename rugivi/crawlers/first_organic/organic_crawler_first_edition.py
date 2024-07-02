@@ -531,30 +531,31 @@ class OrganicCrawlerFirstEdition:
 
 				parent_spot = self.dir_and_start_spot[str(basedir_parent_path)]
 				(parent_spot_x_S, parent_spot_y_S) = parent_spot
-
-				# try x times to find an empty border spot closer and closer to the parent spot
-				for current_round in range(
-					0, 30
-				):  #  was 300 -> more time needed for that (bad), but 30 is inaccurate
-					sleep(0.0002)
-					candidate = random.choice(tuple(self.border_spots))
-					#print("border spot candidate",candidate)
-					if candidate in list_of_unsuccessful_border_spots:
-						#print("Border candiate",candidate, "already checked and it is not good")
-						continue
-					#print("Border candiate",candidate)
-					(candidate_x_S, candidate_y_S) = candidate
-					(start_spot_x_S, start_spot_y_S) = start_spot
-					# changed "or" to "and"
-					if self.CROSS_SHAPE_GROW:
-						if abs(candidate_x_S - parent_spot_x_S) < abs(
-							start_spot_x_S - parent_spot_x_S
-							) and abs(candidate_y_S - parent_spot_y_S) < abs(
-							start_spot_y_S - parent_spot_y_S
-						):
+				if len(list_of_unsuccessful_border_spots) < 14:
+					
+					# try x times to find an empty border spot closer and closer to the parent spot
+					for current_round in range(
+						0, 30 - len(list_of_unsuccessful_border_spots) # the more unsuccessful the search is, the less nearer the spot is selected
+					):  #  was 300 -> more time needed for that (bad), but 30 is inaccurate
+						sleep(0.0002)
+						candidate = random.choice(tuple(self.border_spots))
+						#print("border spot candidate",candidate)
+						if candidate in list_of_unsuccessful_border_spots:
+							#print("Border candiate",candidate, "already checked and it is not good")
+							continue
+						#print("Border candiate",candidate)
+						(candidate_x_S, candidate_y_S) = candidate
+						(start_spot_x_S, start_spot_y_S) = start_spot
+						# changed "or" to "and"
+						if self.CROSS_SHAPE_GROW:
+							if abs(candidate_x_S - parent_spot_x_S) < abs(
+								start_spot_x_S - parent_spot_x_S
+								) and abs(candidate_y_S - parent_spot_y_S) < abs(
+								start_spot_y_S - parent_spot_y_S
+							):
+								start_spot = candidate
+						elif math.dist((candidate_x_S,candidate_y_S),(parent_spot_x_S,parent_spot_y_S)) < math.dist((start_spot_x_S,start_spot_y_S),(parent_spot_x_S,parent_spot_y_S)):
 							start_spot = candidate
-					elif math.dist((candidate_x_S,candidate_y_S),(parent_spot_x_S,parent_spot_y_S)) < math.dist((start_spot_x_S,start_spot_y_S),(parent_spot_x_S,parent_spot_y_S)):
-						start_spot = candidate
 
 			elif (
 				self.start_spot_search_method

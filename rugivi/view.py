@@ -144,7 +144,13 @@ class View:
 		drawrounds = self.max_draw_rounds
 
 		start_time = time_ns()
+		broke_draw_loop = False
 		for drawround in range(0, drawrounds):
+
+			if (time_ns() - start_time)/1000000 > 200: # no round longer than 200 ms
+				broke_draw_loop = True
+				break
+
 
 			self.update_matrix_position += 1
 			if self.update_matrix_position >= len(self.update_matrix):
@@ -317,17 +323,20 @@ class View:
 										self.performance_images_drawn + 1
 									)
 
-		elapsed_time = int((time_ns() - start_time) / 1000000)
-
-		new_max_draw_rounds = 1
-
-		per_round = elapsed_time / self.max_draw_rounds
-		if per_round < 1:
-			per_round = 1
-		fps = 15
-		new_max_draw_rounds = int((1000 / fps) / per_round)
-		if new_max_draw_rounds < 1:
+		if broke_draw_loop:
 			new_max_draw_rounds = 1
+		else:
+			elapsed_time = int((time_ns() - start_time) / 1000000)
+
+			new_max_draw_rounds = 1
+
+			per_round = elapsed_time / self.max_draw_rounds
+			if per_round < 1:
+				per_round = 1
+			fps = 15
+			new_max_draw_rounds = int((1000 / fps) / per_round)
+			if new_max_draw_rounds < 1:
+				new_max_draw_rounds = 1
 
 		self.max_draw_rounds_queue.append(new_max_draw_rounds)
 		self.max_draw_rounds_queue.pop(0)

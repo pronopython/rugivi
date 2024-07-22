@@ -29,11 +29,12 @@
 ##############################################################################################
 #
 
+import os
 import threading
 from time import sleep, time
 
-from rugivi.thread_safe_list import *
-from rugivi.fap_table.fap_table import *
+from rugivi.thread_safe_list import ThreadSafeList
+from rugivi.fap_table.fap_table import FapTable, FapTableCard
 import random
 from pathlib import Path
 import json
@@ -111,8 +112,8 @@ class FapTableManager:
 		while self.running:
 
 			sleep(3)
-			fap_table : FapTable = None # type: ignore
-			for fap_table in self.fap_tables.getCopyOfList() :
+			fap_table: FapTable = None  # type: ignore
+			for fap_table in self.fap_tables.getCopyOfList():
 
 				# TODO in view??? displayed?
 
@@ -123,7 +124,9 @@ class FapTableManager:
 				elif fap_table.status_sync == FapTable.STATUS_LOAD:
 
 					cards_json = []
-					json_filename = os.path.join(fap_table.table_dir, "ftpositions.json")
+					json_filename = os.path.join(
+						fap_table.table_dir, "ftpositions.json"
+					)
 
 					if os.path.isfile(json_filename):
 						print("Loading fapTable json:", json_filename)
@@ -131,7 +134,9 @@ class FapTableManager:
 							cards_json = json.load(f)
 						for cardJson in cards_json:
 							card = FapTableCard()
-							card.load_from_json_dictionary(cardJson, fap_table.table_dir)
+							card.load_from_json_dictionary(
+								cardJson, fap_table.table_dir
+							)
 							card.image = self.image_server.create_streamed_image(
 								card.image_path, StreamedImage.QUALITY_ORIGINAL
 							)
@@ -165,7 +170,6 @@ class FapTableManager:
 
 					if fap_table.is_displayed:
 						# loadsync
-						# print("Syncing FT:",fapTable.tableDir)
 						for root, d_names, f_names in os.walk(fap_table.table_dir):
 
 							f_names = [
@@ -182,7 +186,7 @@ class FapTableManager:
 
 							for f_name in f_names:
 								found = False
-								card : FapTableCard = None # type: ignore
+								card: FapTableCard = None  # type: ignore
 								for card in fap_table.cards:
 									f_path = os.path.join(root, f_name)
 									if card.image_path == f_path:

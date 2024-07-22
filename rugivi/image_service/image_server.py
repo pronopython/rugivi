@@ -31,7 +31,6 @@
 
 import hashlib
 import math
-import os
 from typing import NoReturn
 import pygame
 
@@ -48,10 +47,10 @@ from .abstract_streamed_media import AbstractStreamedMedia
 from .streamed_image import StreamedImage
 
 from ..world_things.chunk import Chunk
-from ..thread_safe_list import *
+from ..thread_safe_list import ThreadSafeList
 from ..view import View
-from ..world_things.world import *
-from ..image_database_service.image_server_database import *
+from ..world_things.world import World
+from ..image_database_service.image_server_database import ImageServerDatabase
 
 
 class ImageServerConduit:
@@ -124,7 +123,6 @@ class ImageServerConduit:
 
 					# image is a surrogate for a video file
 					if self.media.get_extended_attribute("video_still_uuid") != None:
-						# print("Creating cached file for",self.media.get_extended_attribute("video_file"))
 						uuid_name = self.media.get_extended_attribute(
 							"video_still_uuid"
 						)
@@ -171,14 +169,14 @@ class ImageServerConduit:
 							self.media.state = StreamedImage.STATE_LOADED
 
 							self.image_server._total_disk_loaded += 1
-						except pygame.error as message:
+						except pygame.error:
 							print(
 								"Conduit " + str(self.name) + " cannot load ",
 								self.media.original_file_path,
 							)
 							self.media.state = StreamedImage.STATE_ERROR_ON_LOAD
 							self.waiting = True
-						except FileNotFoundError as e:
+						except FileNotFoundError:
 							print(
 								"Conduit " + str(self.name) + " cannot load ",
 								self.media.original_file_path,
@@ -195,7 +193,8 @@ class ImageServerConduit:
 					# QUALITY_COLOR
 					self.media.average_color = pygame.transform.average_color(original_surface)  # type: ignore
 
-					# TODO change load + available quality based on size of image (e.g. image smaller than ordered "screen" size => keep original
+					# TODO change load + available quality based on size of image
+					#      (e.g. image smaller than ordered "screen" size => keep original
 
 					# QUALITY_THUMB ... QUALITY_SCREEN
 					if self.media._load_quality >= StreamedImage.QUALITY_THUMB:
@@ -319,9 +318,7 @@ class ImageServer:
 
 		self.image_cache = ImageCache(cache_base_dir)
 
-		# self.video_still_generator = VideoStillGenerator(jpg_quality=65, max_dimension=(800,800),remove_letterbox=True)
 		self.video_still_generator = VideoStillGenerator()
-		# self.video_still_generator = VideoStillGenerator(jpg_quality=95,remove_letterbox=True)
 
 		self.image_server_database = ImageServerDatabase(thumbDbFile)
 		for conduit in self.conduits:
@@ -388,7 +385,6 @@ class ImageServer:
 					> ImageServer.HOUSEKEEPING_MAX_MEM_MB_THRESHOLD * 1024 * 1024
 				):
 					pass
-					# housekeepingNow = True
 					# TODO when more than MB RAM => panic if it will not go down after gc => then housekeeping IS ALWAYS RUNNING
 
 				self.print_statistic()
@@ -430,7 +426,6 @@ class ImageServer:
 		self.fetcher_loop_running = True
 		while self.running:
 			sleep(0.2)
-			# print("server view fetcher loop")
 			for view in self.views:
 				sleep(1)
 
@@ -449,12 +444,9 @@ class ImageServer:
 					view_chunk_y2_C = view.world.convert_S_to_C(view.world_y2_S)
 
 					# based on height, fetch surrounding chunks also
-					# print(view_chunk_x1_C,view_chunk_y1_C,"-",view_chunk_x2_C,view_chunk_y2_C)
 					for x_C in range(view_chunk_x1_C, view_chunk_x2_C + 1):
 						for y_C in range(view_chunk_y1_C, view_chunk_y2_C + 1):
 							chunk: Chunk = view.world.get_chunk_at_C(x_C, y_C)
-							# print("view fetcher: chunk",chunk.x_C,chunk.y_C)
-							# sleep(0.02)
 							for x_SL in range(0, World.CHUNK_SIZE):
 								sleep(0.00002)
 								for y_SL in range(0, World.CHUNK_SIZE):
@@ -467,17 +459,8 @@ class ImageServer:
 										if isinstance(image, StreamedMockup):
 											continue
 
-										# needed_quality = StreamedImage.QUALITY_THUMB
 										needed_quality = StreamedImage.QUALITY_GRID
 
-										# if (
-										# 	view.height / 4
-										# 	< World.SPOT_SIZE
-										# 	/ ImageServer.QUALITY_PIXEL_SIZE[
-										# 		StreamedImage.QUALITY_THUMB
-										# 	]
-										# ):
-										# 	needed_quality = StreamedImage.QUALITY_GRID
 										x_S = x_SL + chunk.top_spot_x_S
 										y_S = y_SL + chunk.top_spot_y_S
 										is_on_screen = (
@@ -616,7 +599,6 @@ class ImageServer:
 	def create_streamed_mockup(self, path, color_string="", color=None):
 		image = StreamedMockup()
 		image.set_original_file_path(path)
-		# self.media_queue.put(image)
 		if color != None:
 			image.average_color = color
 		else:

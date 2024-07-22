@@ -35,7 +35,7 @@ from rugivi.world_things.chunk import Chunk
 from rugivi.world_things.frame import Frame
 from threading import Lock
 from .abstract_world import AbstractWorld
-from rugivi.world_things.chunk import Chunk
+
 
 class World(AbstractWorld):
 
@@ -53,9 +53,7 @@ class World(AbstractWorld):
 		self._lock = Lock()
 		self._chunksInMemory: int = 0
 		self._numberOfFrames: int = 0
-		self.chunkLoader : AbstractWorldDatabase = None # type: ignore
-
-
+		self.chunkLoader: AbstractWorldDatabase = None  # type: ignore
 
 	def get_chunk_at_C(self, x_C: int, y_C: int) -> Chunk:
 		with self._lock:
@@ -114,5 +112,5 @@ class World(AbstractWorld):
 	def set_chunk_loader(self, chunkLoader) -> None:
 		self.chunkLoader = chunkLoader
 
-	def get_all_chunks_in_memory_as_list(self) -> 'list[Chunk]':
+	def get_all_chunks_in_memory_as_list(self) -> "list[Chunk]":
 		return list(self._chunks.values())

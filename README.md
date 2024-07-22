@@ -223,6 +223,8 @@ You can watch this process or start traveling through the images world.
 |i                |Toggle grey information box                                                         |
 |1-7              |Zoom levels                                                                         |
 |0                |Zoom fit                                                                            |
+|b                |Go backward in history to previous selection                                        |
+|f                |Go forward in history to next selection                                             |
 |j                |Jump randomly                                                                       |
 |n                |Open image with system image viewer; Open video with system video player of VLC     |
 |t                |Call [Fapel-System](https://github.com/pronopython/fapel-system) Tagger on selection|
@@ -230,7 +232,7 @@ You can watch this process or start traveling through the images world.
 |up / down        |Open and go through Fapel Table rows                                                |
 |left / right     |Go through Fapel Tables of one row                                                  |
 |g                |Open Dialog to go to a spot by coordinates x,y                                      |
-|c                |Open information dialog  |
+|c                |Open information dialog                                                             |
 |o                |Pause image server (troubleshooting)                                                |
 |p                |Pause crawler (troubleshooting)                                                     |
 |e                |Generate and export world map as png file                                           |
@@ -706,13 +708,45 @@ in `rugivi.conf`, RuGiVi will not load images but rather represent every directo
 
 # 📢 Community Support
 
+Please report errors you find! For example, I did not find out that the rugivi_configurator could not select new files for about 4 releases. I sure cannot test every setup or every way you could use RuGiVi 😮 so your input is **gold** for me!
+
+Since you may not like to be connected to be using RuGiVi, you can contact me **one-way anonymously** and report errors!
+
+## Report errors and send ideas anonymously
+
+Head over to
+
+[my bug report at formape.com](https://www.formape.com/f/phqrw)
+
+and fill out the bug report form. You do not need an account or provide any form of personal information (mail address etc). Just help me find errors and improve RuGiVi!
+
+You can also contact me via email: pronopython@proton.me . If you want to contact me anonymously, create yourself a burner email account.
+
+## Report errors via GitHub
 The [GitHub discussion boards](https://github.com/pronopython/rugivi/discussions) are open for sharing ideas and plans for RuGiVi.
 
 You can report errors through a [GitHub issue](https://github.com/pronopython/rugivi/issues/new).
 
-Don't want to use GitHub? You can also contact me via email: pronopython@proton.me If you want to contact me anonymously, create yourself a burner email account.
+
 
 # Release Notes
+
+## v0.6.0-alpha
+
+### added
+
+- History of visited spots with ability to go back and forth added
+
+### fixed
+
+- rugivi_configurator now uses save-as dialog (selecting a non existing new sqlite file is now possible)
+- selection left the visible area when screen was moved and switched back to screen to late
+- jump did not change selection when target spot was visible on screen (only the screen was centered)
+
+### changed
+
+- Reformatted all files with black
+- Removed dead or commented out code (using flake8)
 
 ## v0.5.2-alpha
 

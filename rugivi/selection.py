@@ -30,12 +30,15 @@
 #
 
 from typing import Optional
+
+from rugivi.landmarks.point_of_interest import PointOfInterest
+from rugivi.landmarks.tour import Tour
 from .world_things.world import World
 from .image_service.abstract_streamed_media import AbstractStreamedMedia
 
 
 class Selection:
-	def __init__(self, world, view) -> None:
+	def __init__(self, world, view, history_tour: Tour = None) -> None:  # type: ignore
 		self.world: World = world
 		self.view = view
 
@@ -49,20 +52,24 @@ class Selection:
 		self.frame = None
 		self.image: AbstractStreamedMedia = None  # type: ignore
 
+		self.history_tour = history_tour
+
 	def is_visible(self) -> bool:
 		return (
-			self.view.world_x1_S <= self.x_S
-			and self.view.world_y1_S <= self.y_S
-			and self.view.world_x2_S >= self.x_S
-			and self.view.world_y2_S >= self.y_S
+			self.view.world_x1_S < self.x_S
+			and self.view.world_y1_S < self.y_S
+			and self.view.world_x2_S - 1 > self.x_S
+			and self.view.world_y2_S - 1 > self.y_S
 		)
 
-	def update_selected_spot(self) -> None:
+	def update_selected_spot(self, update_history=False) -> None:
 		self.frame = self.world.get_frame_at_S(self.x_S, self.y_S)
 		if self.frame != None:
 			self.image = self.frame.image  # type: ignore
 		else:
-			self.image = None # type: ignore
+			self.image = None  # type: ignore
+		if update_history and self.history_tour is not None:
+			self.history_tour.insert(PointOfInterest(position=(self.x_S, self.y_S)))
 
 	def get_selected_file(self) -> Optional[str]:
 		if self.image != None:
@@ -72,3 +79,6 @@ class Selection:
 				return self.image.original_file_path
 		else:
 			return None
+
+	def set_history_tour(self, history_tour):
+		self.history_tour = history_tour

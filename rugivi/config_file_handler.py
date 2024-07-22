@@ -30,7 +30,6 @@
 #
 
 import os
-from pathlib import Path
 import configparser
 import pathlib
 import sys
@@ -46,8 +45,10 @@ class ConfigFileHandler:
 		self.config_file_path = dir_helper.expand_home_dir(self.config_file_path)
 
 		if create_if_missing and not os.path.isfile(self.config_file_path):
-			pathlib.Path(os.path.dirname(self.config_file_path)).mkdir(parents=True, exist_ok=True)
-			open(self.config_file_path, 'a').close()
+			pathlib.Path(os.path.dirname(self.config_file_path)).mkdir(
+				parents=True, exist_ok=True
+			)
+			open(self.config_file_path, "a").close()
 
 		self.create_config_parser_and_load_config()
 		self.config_changed = False
@@ -101,9 +102,16 @@ class ConfigFileHandler:
 		try:
 			self.config_parser.get(group, key)
 		except configparser.NoOptionError:
-			errortext = 'Error: The following group / key combination is missing in your RuGiVi config "'+self.config_file_path+'":\n\n['+group+']\n'+key+'\n\nLook into rugivi dir of git repo for a default config file!'
+			errortext = (
+				'Error: The following group / key combination is missing in your RuGiVi config "'
+				+ self.config_file_path
+				+ '":\n\n['
+				+ group
+				+ "]\n"
+				+ key
+				+ "\n\nLook into rugivi dir of git repo for a default config file!"
+			)
 			print("Config entry missing!")
 			print(errortext)
-			messagebox.showerror('Config entry missing!', errortext)
+			messagebox.showerror("Config entry missing!", errortext)
 			sys.exit()
-

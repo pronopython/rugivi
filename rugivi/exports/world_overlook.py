@@ -32,11 +32,12 @@
 import threading
 from PIL import Image
 
-from time import sleep, time
+from time import sleep
 
-from ..world_things.world import *
-from rugivi import dir_helper as dir_helper
-from ..image_service.image_server import *
+from ..world_things.world import World
+from ..world_things.frame import Frame
+from ..world_things.chunk import Chunk
+from ..image_service.image_server import StreamedImage
 
 
 class WorldOverlook:

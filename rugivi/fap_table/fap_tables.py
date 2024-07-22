@@ -32,13 +32,11 @@
 import os
 from rugivi.config_file_handler import ConfigFileHandler
 
-from rugivi.image_service.image_server import *
-
 from rugivi import dir_helper
 
 
 class FapTables:
-	def __init__(self, configParser : ConfigFileHandler) -> None:
+	def __init__(self, configParser: ConfigFileHandler) -> None:
 
 		self.configParser = configParser
 
@@ -79,7 +77,6 @@ class FapTables:
 		return subdirs
 
 	def get_current_fap_table_dir(self):
-		# print("current ft dir"+str(self.fapTables[self.y][self.x]))
 		print("X=", self.x, "Y=", self.y)
 		return self.fap_tables[self.y][self.x]
 

@@ -33,39 +33,37 @@ import os
 import pathlib
 import uuid
 
-from rugivi.image_service.abstract_cache_filename_generator import AbstractCacheFilenameGenerator
+from rugivi.image_service.abstract_cache_filename_generator import (
+	AbstractCacheFilenameGenerator,
+)
+
 
 class ImageCache(AbstractCacheFilenameGenerator):
-
-
-
 	def __init__(self, cache_base_dir) -> None:
 		self.cache_base_dir = cache_base_dir
 
-	def generate_path_for_uuid(self,uuid_name):
+	def generate_path_for_uuid(self, uuid_name):
 		full_path = self.__get_path_for_uuid(uuid_name)
 		pathlib.Path(full_path).mkdir(parents=True, exist_ok=True)
 
-	def generate_new_cache_uuid_and_filename(self) -> (str,str): # type: ignore
+	def generate_new_cache_uuid_and_filename(self) -> (str, str):  # type: ignore
 		uuid_name = uuid.uuid4().hex
 		self.generate_path_for_uuid(uuid_name)
 		full_path = self.__get_path_for_uuid(uuid_name)
-		return uuid_name, self.__append_filename_to_path(full_path,uuid_name)
-	
+		return uuid_name, self.__append_filename_to_path(full_path, uuid_name)
+
 	def __get_path_for_uuid(self, uuid_name) -> str:
 		path_level_1 = uuid_name[:2]
 		path_level_2 = uuid_name[2:4]
 		full_path = os.path.join(self.cache_base_dir, path_level_1, path_level_2)
-		#full_path_and_filename = os.path.abspath(os.path.join(full_path, uuid_name))
 		return str(full_path)
 
-
-	def __append_filename_to_path(self, full_path,uuid_name)->str:
+	def __append_filename_to_path(self, full_path, uuid_name) -> str:
 		return os.path.abspath(os.path.join(full_path, uuid_name + ".jpg"))
 
 	def get_filename_for_uuid(self, uuid_name) -> str:
 		full_path = self.__get_path_for_uuid(uuid_name)
-		return self.__append_filename_to_path(full_path,uuid_name)
+		return self.__append_filename_to_path(full_path, uuid_name)
 
 	def file_exists(self, uuid_name):
 		return os.path.isfile(self.get_filename_for_uuid(uuid_name))

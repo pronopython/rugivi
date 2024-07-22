@@ -30,8 +30,7 @@
 #
 
 import threading
-from threading import Lock
-from time import sleep, time
+from time import sleep
 import pygame
 
 from sqlitedict import SqliteDict
@@ -69,7 +68,7 @@ class ImageProxy:
 		)
 
 	def from_tuple(self, tuple_to_load) -> bool:
-		""" :return: true, if this ImageProxy could be updated by the tuple_to_load """
+		""":return: true, if this ImageProxy could be updated by the tuple_to_load"""
 		self.average_color = tuple_to_load[1]
 		self.aspect_ratio = tuple_to_load[2]
 		self.width = tuple_to_load[3]
@@ -82,7 +81,7 @@ class ImageProxy:
 			self.image_surface = pygame.image.fromstring(
 				tuple_to_load[0], (self.thumb_width, self.thumb_height), "RGB"
 			)
-		except Exception as e:
+		except Exception:
 			return False
 		return True
 
@@ -121,7 +120,7 @@ class ImageServerDatabase:
 				self.db[imageProxy.path] = imageProxy.to_tuple()
 
 	def get_image_proxy_by_path(self, path) -> ImageProxy:
-		""" :return: ImageProxy on success, None otherwise """
+		""":return: ImageProxy on success, None otherwise"""
 		tuple = self.db.get(path)
 		if tuple != None:
 			imageProxy = ImageProxy()
@@ -146,7 +145,10 @@ class ImageServerDatabase:
 
 			seconds_passed = 0
 
-			while seconds_passed < ImageServerDatabase.DB_COMMIT_EVERY_SECONDS and self.running:
+			while (
+				seconds_passed < ImageServerDatabase.DB_COMMIT_EVERY_SECONDS
+				and self.running
+			):
 				sleep(1)
 				seconds_passed += 1
 

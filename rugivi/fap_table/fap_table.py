@@ -31,8 +31,7 @@
 
 
 import os
-
-from rugivi.image_service.image_server import *
+from rugivi.image_service.abstract_streamed_media import AbstractStreamedMedia
 
 
 class FapTableCard:

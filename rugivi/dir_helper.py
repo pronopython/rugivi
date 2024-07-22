@@ -65,8 +65,12 @@ def get_config_dir(subfolder_for_windows) -> str:
 		config_dir = os.path.join(os.environ["APPDATA"], subfolder_for_windows)
 	return config_dir
 
+
 def is_config_file_present(subfolder_for_windows, config_file_name) -> bool:
-	return os.path.isfile(os.path.join(get_config_dir(subfolder_for_windows),config_file_name))
+	return os.path.isfile(
+		os.path.join(get_config_dir(subfolder_for_windows), config_file_name)
+	)
+
 
 def get_install_dir() -> str:
 	return os.path.dirname(os.path.realpath(__file__))

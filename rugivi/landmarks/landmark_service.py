@@ -29,23 +29,23 @@
 ##############################################################################################
 #
 
-import abc
-import math
+from rugivi.landmarks.tour import Tour
+from rugivi.world_database_service.world_database import WorldDatabase
 
 
-class AbstractWorld:
-	__metaclass__ = abc.ABCMeta
-	SPOT_SIZE = 4096  # pixels
-	CHUNK_SIZE = 32  # spots
+class LandmarkService:
+	def __init__(self, world_database: WorldDatabase) -> None:
+		self.world_database = world_database
+		self.tours = {}
 
-	def __init__(self) -> None:
+	def load_from_db(self):
 		pass
 
-	def convert_SL_to_S(self, sl, c):
-		return (c * AbstractWorld.CHUNK_SIZE) + sl
+	def save_to_db(self):
+		pass
 
-	def convert_S_to_C(self, s: int) -> int:
-		return math.floor(s / AbstractWorld.CHUNK_SIZE)
+	def get_tour_by_name(self, tourname) -> Tour:
+		return None  # type: ignore
 
-	def convert_S_to_SL(self, s: int) -> int:
-		return s % AbstractWorld.CHUNK_SIZE
+	def add_tour(self, tour: Tour):
+		self.tours[tour.name] = tour

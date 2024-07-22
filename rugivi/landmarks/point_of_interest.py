@@ -29,23 +29,29 @@
 ##############################################################################################
 #
 
-import abc
-import math
 
+class PointOfInterest:
+	def __init__(self, position=(0, 0), name="", color=(0, 0, 0)) -> None:
+		self.position = position  # in x_S, y_S
+		self.name = name
+		self.color = color  # in R, G, B
+		self.tour = None
 
-class AbstractWorld:
-	__metaclass__ = abc.ABCMeta
-	SPOT_SIZE = 4096  # pixels
-	CHUNK_SIZE = 32  # spots
+	def _to_tuple(self):
+		return (self.position, self.name, self.color)
 
-	def __init__(self) -> None:
-		pass
+	def _from_tuple(self, tuple):
+		self.position = tuple[0]
+		self.name = tuple[1]
+		self.color = tuple[2]
 
-	def convert_SL_to_S(self, sl, c):
-		return (c * AbstractWorld.CHUNK_SIZE) + sl
+	def is_same_spot(self, poi):
+		if poi is None:
+			return False
+		return poi.position == self.position
 
-	def convert_S_to_C(self, s: int) -> int:
-		return math.floor(s / AbstractWorld.CHUNK_SIZE)
+	def __str__(self) -> str:
+		return str(self.position)
 
-	def convert_S_to_SL(self, s: int) -> int:
-		return s % AbstractWorld.CHUNK_SIZE
+	def __repr__(self):
+		return self.__str__()

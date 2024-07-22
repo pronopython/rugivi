@@ -30,22 +30,12 @@
 #
 
 import math
-from rugivi.image_service.image_server import (
-	Frame,
-	ImageServer,
-	StreamedImage,
-	World,
-	sleep,
-	threading,
-)
+from rugivi.image_service.image_server import ImageServer
 from rugivi.image_service.streamed_image import StreamedImage
 from rugivi.world_database_service.world_database import (
 	WorldDatabase,
 )
-from rugivi.world_things.frame import Frame
 from rugivi.world_things.world import Frame, World
-
-
 import os
 import random
 import threading
@@ -73,10 +63,10 @@ class OrganicCrawlerFirstEdition:
 		crawl_videos=True,
 		excludeDirList=[],
 		mockup_mode=True,
-		cross_shape_grow = False,
-		no_diagonal_grow = True,
-		organic_grow = True,
-		reach_out_ant_mode = True,
+		cross_shape_grow=False,
+		no_diagonal_grow=True,
+		organic_grow=True,
+		reach_out_ant_mode=True,
 	) -> None:
 
 		self.db = WorldDatabase(crawler_db_file_path, world, image_server)
@@ -90,7 +80,7 @@ class OrganicCrawlerFirstEdition:
 		self.basedir: str = self.db.get_and_put_if_none(
 			WorldDatabase.KEY_BASEDIR, basedir
 		)
-		self.excludeDirList=excludeDirList
+		self.excludeDirList = excludeDirList
 
 		self.mockup_mode = mockup_mode
 
@@ -195,7 +185,9 @@ class OrganicCrawlerFirstEdition:
 
 			current_dir_absolute_path = Path(current_dir).absolute()
 
-			if os.path.basename(os.path.normpath(current_dir_absolute_path)).startswith("."):
+			if os.path.basename(os.path.normpath(current_dir_absolute_path)).startswith(
+				"."
+			):
 				# hidden dir (started with ".")
 				self.excludeDirList.append(str(current_dir_absolute_path))
 				continue
@@ -207,9 +199,8 @@ class OrganicCrawlerFirstEdition:
 
 			skip_dir = False
 			for exdir in self.excludeDirList:
-				#print(current_dir_absolute_path," ?= ",exdir)
 				if str(current_dir_absolute_path).startswith(exdir):
-					print("Excluded dir",current_dir_absolute_path,"is skipped")
+					print("Excluded dir", current_dir_absolute_path, "is skipped")
 					skip_dir = True
 					break
 			if skip_dir:
@@ -268,7 +259,9 @@ class OrganicCrawlerFirstEdition:
 							file_path, StreamedImage.QUALITY_THUMB
 						)
 					else:
-						streamed_image = self.imageServer.create_streamed_mockup(file_path, color_string=self.current_dir)
+						streamed_image = self.imageServer.create_streamed_mockup(
+							file_path, color_string=self.current_dir
+						)
 
 					(start_spot_x_S, start_spot_y_S) = found_empty_spots[file_number]
 
@@ -362,7 +355,9 @@ class OrganicCrawlerFirstEdition:
 							file_path, StreamedImage.QUALITY_THUMB
 						)
 					else:
-						streamed_image = self.imageServer.create_streamed_mockup(file_path, color_string=video_file_path)
+						streamed_image = self.imageServer.create_streamed_mockup(
+							file_path, color_string=video_file_path
+						)
 
 					streamed_image.set_extended_attribute("video_still_uuid", uuid_name)
 					streamed_image.set_extended_attribute("video_file", video_file_path)
@@ -385,7 +380,6 @@ class OrganicCrawlerFirstEdition:
 					# remember startSpot of this dir
 					video_file_path = Path(video_file_path).absolute()
 					self.dir_and_start_spot[str(video_file_path)] = video_start_spot
-
 
 				if start_spot != None:
 
@@ -447,29 +441,10 @@ class OrganicCrawlerFirstEdition:
 		print(self.status)
 
 	def __save_to_db(self, borderSpots, dirAndStartSpot):
-
 		print("saving to db")
 		self.status = "saving to db"
 		self.db.put(WorldDatabase.KEY_BORDERSPOTS, borderSpots)
 		self.db.put(WorldDatabase.KEY_DIRANDSTARTSPOT, dirAndStartSpot)
-
-		"""
-		allChunks = self.world.get_all_chunks_in_memory_as_list()
-		for chunk in allChunks:
-			if chunk.is_empty():
-				continue
-			cso = ChunkSaveObject()
-			cso.from_chunk(chunk)
-			k = str((chunk.x_C, chunk.y_C))
-			# print("inserting chunk",k)
-			# storing in same as all the other keys is so hacky...
-			# but commits are per table sadly...
-			# and if program crashes between two commits...
-			self.db.db[str((chunk.x_C, chunk.y_C))] = cso.to_tuple()
-
-		self.db.commit_db()
-		"""
-
 		self.db.save_world_to_database()
 
 	def __pause_for_image_queue(self):
@@ -508,8 +483,6 @@ class OrganicCrawlerFirstEdition:
 			# fallback: fill start_spot no matter what will happen
 			start_spot = random.choice(tuple(self.border_spots))
 
-			#print("Trying start spot",start_spot)
-
 			if (
 				self.start_spot_search_method
 				== OrganicCrawlerFirstEdition.START_SPOT_SEARCH_NEAR_PARENT
@@ -520,8 +493,6 @@ class OrganicCrawlerFirstEdition:
 				basedir_path = Path(current_dir)
 
 				basedir = Path(self.basedir).absolute()
-				# error: 2 times going to parent dir!
-				# parentPath = path.parent.absolute()
 				basedir_parent_path = basedir_path.absolute()
 				# Going down the parent line
 				while len(str(basedir_parent_path)) > len(str(basedir)):
@@ -532,29 +503,35 @@ class OrganicCrawlerFirstEdition:
 				parent_spot = self.dir_and_start_spot[str(basedir_parent_path)]
 				(parent_spot_x_S, parent_spot_y_S) = parent_spot
 				if len(list_of_unsuccessful_border_spots) < 14:
-					
+
 					# try x times to find an empty border spot closer and closer to the parent spot
 					for current_round in range(
-						0, 30 - len(list_of_unsuccessful_border_spots) # the more unsuccessful the search is, the less nearer the spot is selected
-					):  #  was 300 -> more time needed for that (bad), but 30 is inaccurate
+						0,
+						30
+						- len(
+							list_of_unsuccessful_border_spots
+						),  # the more unsuccessful the search is, the less nearer the spot is selected
+					):  # was 300 -> more time needed for that (bad), but 30 is inaccurate
 						sleep(0.0002)
 						candidate = random.choice(tuple(self.border_spots))
-						#print("border spot candidate",candidate)
 						if candidate in list_of_unsuccessful_border_spots:
-							#print("Border candiate",candidate, "already checked and it is not good")
 							continue
-						#print("Border candiate",candidate)
 						(candidate_x_S, candidate_y_S) = candidate
 						(start_spot_x_S, start_spot_y_S) = start_spot
-						# changed "or" to "and"
 						if self.CROSS_SHAPE_GROW:
 							if abs(candidate_x_S - parent_spot_x_S) < abs(
 								start_spot_x_S - parent_spot_x_S
-								) and abs(candidate_y_S - parent_spot_y_S) < abs(
+							) and abs(candidate_y_S - parent_spot_y_S) < abs(
 								start_spot_y_S - parent_spot_y_S
 							):
 								start_spot = candidate
-						elif math.dist((candidate_x_S,candidate_y_S),(parent_spot_x_S,parent_spot_y_S)) < math.dist((start_spot_x_S,start_spot_y_S),(parent_spot_x_S,parent_spot_y_S)):
+						elif math.dist(
+							(candidate_x_S, candidate_y_S),
+							(parent_spot_x_S, parent_spot_y_S),
+						) < math.dist(
+							(start_spot_x_S, start_spot_y_S),
+							(parent_spot_x_S, parent_spot_y_S),
+						):
 							start_spot = candidate
 
 			elif (
@@ -564,7 +541,6 @@ class OrganicCrawlerFirstEdition:
 				for current_round in range(0, 50):
 					sleep(0.0002)
 					candidate = random.choice(tuple(self.border_spots))
-					#print("border spot candidate",candidate)
 					if candidate in list_of_unsuccessful_border_spots:
 						continue
 					(candidate_x_S, candidate_y_S) = candidate
@@ -589,17 +565,17 @@ class OrganicCrawlerFirstEdition:
 			##############################################################################
 			# See if enough empty spots are next to the start spot
 			##############################################################################
-			self.status = "finding biome (gather empty spots [0/"+str(neededSpots)+"])"
+			self.status = (
+				"finding biome (gather empty spots [0/" + str(neededSpots) + "])"
+			)
 			stack_with_empty_spots_to_check: list = [start_spot]
 			# stack always holds neighbouring empty spots to be checked
 			# if they are not that far away so that spots are grouped together
 			# and not so far away from another
-			#print("checking enough empty spots")
 			while (
 				len(stack_with_empty_spots_to_check) > 0
 				and not found_enough_empty_spots
 			):
-				#print("size of stack_with_empty_spots_to_check:",len(stack_with_empty_spots_to_check))
 				sleep(0.0002)
 				if self.running == False:
 					print("Crawler loop stopped")
@@ -609,7 +585,6 @@ class OrganicCrawlerFirstEdition:
 				##############################################################################
 				# Select one of the empty 8 (or less) neighbours of the start_spot
 				##############################################################################
-				#print("select one empty neighbour")
 				if not self.ORGANIC_GROW:
 					currentSpot = stack_with_empty_spots_to_check.pop(0)
 				else:  # organic grow
@@ -642,7 +617,6 @@ class OrganicCrawlerFirstEdition:
 						if no_of_same_result >= max_same_result:
 							break
 						candidate = random.choice(stack_with_empty_spots_to_check)
-						#print("current_round", current_round,"currentspot:",currentSpot,"candidate", candidate)						
 						if candidate == currentSpot:
 							no_of_same_result += 1
 							continue
@@ -650,11 +624,8 @@ class OrganicCrawlerFirstEdition:
 							sleep(0.0001)
 						(candidate_x_S, candidate_y_S) = candidate
 						(ux, uy) = currentSpot
-						# if abs(cx-sx) < abs(ux-sx) or abs(cy-sy) < abs(uy-sy):
 
-						# was both "or", now "and"
 						if reach_out:
-							# changed "or" to "and"
 							if abs(candidate_x_S - start_spot_x_S) > abs(
 								ux - start_spot_x_S
 							) and abs(candidate_y_S - start_spot_y_S) > abs(
@@ -665,7 +636,6 @@ class OrganicCrawlerFirstEdition:
 							else:
 								no_of_same_result += 1
 						else:
-							# changed "or" to "and"
 							if abs(candidate_x_S - start_spot_x_S) < abs(
 								ux - start_spot_x_S
 							) and abs(candidate_y_S - start_spot_y_S) < abs(
@@ -685,7 +655,13 @@ class OrganicCrawlerFirstEdition:
 					found_enough_empty_spots = True
 					break
 
-				self.status = "finding biome (gather empty spots ["+str(len(found_empty_spots))+"/"+str(neededSpots)+"])"
+				self.status = (
+					"finding biome (gather empty spots ["
+					+ str(len(found_empty_spots))
+					+ "/"
+					+ str(neededSpots)
+					+ "])"
+				)
 
 				# ... and now look for its neighbours
 				(start_spot_x_S, start_spot_y_S) = currentSpot
@@ -693,7 +669,6 @@ class OrganicCrawlerFirstEdition:
 				##############################################################################
 				# Fill stack with all empty neighbours (up to 8 neighbours)
 				##############################################################################
-				#print("add all empty adjacent spots of the neighbour")
 				for x_S in range(start_spot_x_S - 1, start_spot_x_S + 2):
 					for y_S in range(start_spot_y_S - 1, start_spot_y_S + 2):
 						if start_spot_x_S == x_S and start_spot_y_S == y_S:
@@ -729,24 +704,18 @@ class OrganicCrawlerFirstEdition:
 		# correct border spots
 		for currentSpot in found_empty_spots:
 			(start_spot_x_S, start_spot_y_S) = currentSpot
-			#sleep(0.00003)
 			sleep(0.00002)
 			# go through all 8 neighbours and check changes in "border status"
 			for x_S in range(start_spot_x_S - 1, start_spot_x_S + 2):
 				for y_S in range(start_spot_y_S - 1, start_spot_y_S + 2):
-					if self.world.get_frame_at_S(x_S, y_S) != None or (x_S, y_S) in found_empty_spots:
+					if (
+						self.world.get_frame_at_S(x_S, y_S) != None
+						or (x_S, y_S) in found_empty_spots
+					):
 						if (x_S, y_S) in self.border_spots:
-							#print("removing border spot",(x_S, y_S))
 							self.border_spots.remove((x_S, y_S))  # no border anymore
 					else:
 						if (x_S, y_S) not in self.border_spots:
 							self.border_spots.add((x_S, y_S))  # a new border spot
-
-		#for bs in self.border_spots:
-		#	if self.world.get_frame_at_S(bs[0],bs[1]) != None:
-		#		print("BORDER SPOTS CONTAIN NON EMPTY SPOT:",bs)
-
-		#print("found empty spots",found_empty_spots)
-		#print("border spots", self.border_spots)
 
 		return start_spot, found_empty_spots

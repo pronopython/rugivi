@@ -31,12 +31,11 @@
 
 import abc
 
+
 class AbstractCacheFilenameGenerator:
-
-
 	def __init__(self) -> None:
 		pass
 
 	@abc.abstractmethod
-	def generate_new_cache_uuid_and_filename(self) -> (str,str): # type: ignore
+	def generate_new_cache_uuid_and_filename(self) -> (str, str):  # type: ignore
 		pass

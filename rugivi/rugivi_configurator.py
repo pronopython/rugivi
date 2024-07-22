@@ -34,7 +34,6 @@ import configparser
 import pathlib
 import platform
 
-import sys
 from tkinter import Checkbutton, IntVar, Tk
 from tkinter import Label
 from tkinter import Frame
@@ -54,10 +53,8 @@ from tkinter import Scrollbar
 
 import tkinter as tk
 
-# import tkinter.ttk as ttk
 from tkinter import filedialog
 import os
-from typing import NoReturn
 
 from rugivi import config_file_handler as config_file_handler
 from rugivi import dir_helper as dir_helper
@@ -102,7 +99,7 @@ class SelectionFolder(SelectionSingleItem):
 
 		self.frame = Frame(parent)
 		self.frame.columnconfigure(1, weight=1)
-		Label(self.frame, text=description,fg=fg).grid(column=0, row=0, sticky=W)
+		Label(self.frame, text=description, fg=fg).grid(column=0, row=0, sticky=W)
 		self.dirText = StringVar(self.frame, self.initValue)
 		self.dirText.trace_add("write", self.valueChanged)
 		Entry(self.frame, textvariable=self.dirText).grid(column=1, row=0, sticky=W + E)
@@ -155,7 +152,13 @@ class SelectionFile(SelectionSingleItem):
 		)
 
 	def buttonClicked(self) -> None:
-		filename = filedialog.askopenfilename(filetypes=self.filetypes)
+		filename = filedialog.asksaveasfilename(
+			filetypes=self.filetypes,
+			confirmoverwrite=True,
+			title=self.description,
+			initialfile=self.dirText.get(),
+			initialdir=os.path.dirname(self.dirText.get()),
+		)
 		self.dirText.set(filename)
 		self.configParser.change_config()[self.configGroup][self.configItem] = filename
 
@@ -176,7 +179,9 @@ class SelectionBoolean(SelectionSingleItem):
 
 		self.frame = Frame(parent)
 		self.frame.columnconfigure(1, weight=1)
-		Label(self.frame, text=description, fg=fg).grid(column=0, row=0, ipadx=5, sticky=W)
+		Label(self.frame, text=description, fg=fg).grid(
+			column=0, row=0, ipadx=5, sticky=W
+		)
 		self.button = Button(
 			self.frame, text=str(self.initValue), command=self.buttonClicked
 		)
@@ -241,7 +246,6 @@ class SelectionMultiItem(SelectionSingleItem):
 
 		self.listbox = Listbox(listboxframe, height=5)
 		self.listbox.pack(side=LEFT, fill=BOTH, expand=YES)
-		# self.listbox.grid(column=1,row=0, rowspan=2,sticky=W+E)
 
 		scrollbar = Scrollbar(listboxframe)
 		scrollbar.pack(side=RIGHT, fill=BOTH)
@@ -326,9 +330,13 @@ class ConfigApp:
 		Label(frm, text="Crawler settings").grid(column=0, row=row, sticky=W)
 		row += 1
 
-		# ttk.Button(frm, text="Quit", command=root.destroy).grid(column=1, row=0)
 		itfo = SelectionFolder(
-			frm, self.configParser, "Images & videos root directory", "world", "crawlerRootDir", fg="blue"
+			frm,
+			self.configParser,
+			"Images & videos root directory",
+			"world",
+			"crawlerRootDir",
+			fg="blue",
 		)
 		itfo.getFrame().grid(column=0, row=row, ipadx=10, padx=10, sticky=W + E)
 		row += 1
@@ -349,7 +357,7 @@ class ConfigApp:
 			frm,
 			text="You must use a new World DB File or delete the old one when changing root directory",
 			fg="black",
-		).grid(column=0, row=row,ipadx=10, padx=10,sticky=W)
+		).grid(column=0, row=row, ipadx=10, padx=10, sticky=W)
 		row += 1
 
 		Label(frm, text="Thumb Database settings").grid(column=0, row=row, sticky=W)
@@ -365,7 +373,12 @@ class ConfigApp:
 		row += 1
 
 		itfo = SelectionBoolean(
-			frm, self.configParser, "Enable video crawling", "world", "crawlvideos", fg="blue"
+			frm,
+			self.configParser,
+			"Enable video crawling",
+			"world",
+			"crawlvideos",
+			fg="blue",
 		)
 		itfo.getFrame().grid(column=0, row=row, ipadx=10, padx=10, sticky=W + E)
 		row += 1
@@ -437,16 +450,16 @@ class ConfigApp:
 
 		bframe = Frame(frm)
 
-		self.start_menu_entry = IntVar(bframe,value=1)
+		self.start_menu_entry = IntVar(bframe, value=1)
 
 		Checkbutton(
 			bframe, text="create start menu entries", variable=self.start_menu_entry
 		).grid(column=0, row=0, sticky=W)
 
 		if apply_and_start:
-			text_apply_and="Apply and start"
+			text_apply_and = "Apply and start"
 		else:
-			text_apply_and="Apply and exit"
+			text_apply_and = "Apply and exit"
 		Button(bframe, text=text_apply_and, command=self.actionSaveAndExit).grid(
 			column=1, row=0, ipadx=5, sticky=E
 		)
@@ -468,7 +481,7 @@ class ConfigApp:
 	def run(self) -> None:
 		self.root.mainloop()
 
-	def actionSaveAndExit(self) -> NoReturn:
+	def actionSaveAndExit(self):
 		self.configParser.change_config()["configuration"]["configured"] = "True"
 		self.configParser.write_changed_config()
 		self.create_directories()
@@ -476,12 +489,10 @@ class ConfigApp:
 			self._create_start_menu_entries()
 		self.root.quit()
 		self.root.destroy()
-		#exit()
 
-	def actionExitWithoutSave(self) -> NoReturn:
+	def actionExitWithoutSave(self):
 		self.root.quit()
 		self.root.destroy()
-		#exit()
 
 	def is_windows(self) -> bool:
 		if platform.system() == "Windows":
@@ -678,8 +689,9 @@ class ConfigApp:
 			print("Creating app shortcut...")
 			packagedir = os.path.dirname(os.path.realpath(__file__))
 			sc_icon = os.path.join(packagedir, "icon.ico")
-			
-			# TODO future pyshortcuts versions > 1.9.0 might contain the feature that noexe=True can be used to directly call "rugivi" instead of rugivi.py
+
+			# TODO future pyshortcuts versions > 1.9.0 might contain the feature that noexe=True can be used to
+			# directly call "rugivi" instead of rugivi.py
 			make_shortcut(
 				script=os.path.join(packagedir, "..\\..\\..\\Scripts\\rugivi.exe"),
 				name="RuGiVi",
@@ -691,7 +703,9 @@ class ConfigApp:
 
 			print("Creating configurator shortcut...")
 			make_shortcut(
-				script=os.path.join(packagedir, "..\\..\\..\\Scripts\\rugivi_configurator.exe"),
+				script=os.path.join(
+					packagedir, "..\\..\\..\\Scripts\\rugivi_configurator.exe"
+				),
 				name="RuGiVi Configurator",
 				icon=sc_icon,
 				terminal=False,
@@ -704,7 +718,8 @@ class ConfigApp:
 			packagedir = os.path.dirname(os.path.realpath(__file__))
 			sc_icon = os.path.join(packagedir, "icon.png")
 
-			# TODO future pyshortcuts versions > 1.9.0 might contain the feature that noexe=True can be used to directly call "rugivi" instead of rugivi.py
+			# TODO future pyshortcuts versions > 1.9.0 might contain the feature that noexe=True can be used to
+			# directly call "rugivi" instead of rugivi.py
 			make_shortcut(
 				script=dir_helper.expand_home_dir("~/.local/bin/rugivi"),
 				name="RuGiVi",

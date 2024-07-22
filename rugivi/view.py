@@ -33,17 +33,17 @@ import pygame
 from pygame.surface import Surface
 
 from .world_things.frame import Frame
+from .world_things.world import World
 
-from .world_things.world import *
-#from .image_server import *
 from .image_service.abstract_streamed_media import AbstractStreamedMedia
-from .selection import *
+from .selection import Selection
 import random
 from time import time_ns
 import math
 
+
 class View:
-	def __init__(self, world: World, initial_height : float) -> None:
+	def __init__(self, world: World, initial_height: float) -> None:
 		self.current_center_world_pos_x_P = 0
 		self.current_center_world_pos_y_P = 0
 		self.height = initial_height
@@ -127,10 +127,10 @@ class View:
 		spot_width_P = math.ceil(World.SPOT_SIZE / self.height)
 		spot_height_P = math.ceil(World.SPOT_SIZE / self.height)
 
-		self.world_x1_S = int(world_x1_P / World.SPOT_SIZE) - 1
-		self.world_y1_S = int(world_y1_P / World.SPOT_SIZE) - 1
-		self.world_x2_S = int(world_x2_P / World.SPOT_SIZE) + 1
-		self.world_y2_S = int(world_y2_P / World.SPOT_SIZE) + 1
+		self.world_x1_S = round(world_x1_P / World.SPOT_SIZE) - 1
+		self.world_y1_S = round(world_y1_P / World.SPOT_SIZE) - 1
+		self.world_x2_S = round(world_x2_P / World.SPOT_SIZE) + 1
+		self.world_y2_S = round(world_y2_P / World.SPOT_SIZE) + 1
 
 		if (
 			(self.current_center_world_pos_x_P != self.old_center_world_pos_x_P)
@@ -147,10 +147,9 @@ class View:
 		broke_draw_loop = False
 		for drawround in range(0, drawrounds):
 
-			if (time_ns() - start_time)/1000000 > 200: # no round longer than 200 ms
+			if (time_ns() - start_time) / 1000000 > 200:  # no round longer than 200 ms
 				broke_draw_loop = True
 				break
-
 
 			self.update_matrix_position += 1
 			if self.update_matrix_position >= len(self.update_matrix):
@@ -202,7 +201,8 @@ class View:
 
 					if image == None or (
 						image.state != AbstractStreamedMedia.STATE_READY
-						and image.state != AbstractStreamedMedia.STATE_READY_AND_RELOADING
+						and image.state
+						!= AbstractStreamedMedia.STATE_READY_AND_RELOADING
 					):
 						pygame.draw.rect(
 							display,
@@ -218,7 +218,8 @@ class View:
 
 					if (
 						image.state == AbstractStreamedMedia.STATE_READY
-						or image.state == AbstractStreamedMedia.STATE_READY_AND_RELOADING
+						or image.state
+						== AbstractStreamedMedia.STATE_READY_AND_RELOADING
 					):
 
 						if (
@@ -279,9 +280,9 @@ class View:
 							)
 							if spot_width_P < 5:
 								pass
-							
+
 							elif spot_width_P <= 32:
-								surface :Surface = image.get_surface(AbstractStreamedMedia.QUALITY_THUMB) # type: ignore
+								surface: Surface = image.get_surface(AbstractStreamedMedia.QUALITY_THUMB)  # type: ignore
 
 								if surface != None:
 									scaled_image_surface = pygame.transform.smoothscale(
@@ -299,18 +300,26 @@ class View:
 										self.performance_images_drawn + 1
 									)
 							else:
-								surface :Surface = image.get_surface() # type: ignore
+								surface: Surface = image.get_surface()  # type: ignore
 								if surface != None:
 									# only smoothscale to small destination size, big dest. sizes take too long
-									if spot_width_P < 256: # TODO hard coded pixels
-										scaled_image_surface = pygame.transform.smoothscale(
-											surface,
-											(image_drawing_width_P, image_drawing_height_P),
+									if spot_width_P < 256:  # TODO hard coded pixels
+										scaled_image_surface = (
+											pygame.transform.smoothscale(
+												surface,
+												(
+													image_drawing_width_P,
+													image_drawing_height_P,
+												),
+											)
 										)
 									else:
 										scaled_image_surface = pygame.transform.scale(
 											surface,
-											(image_drawing_width_P, image_drawing_height_P),
+											(
+												image_drawing_width_P,
+												image_drawing_height_P,
+											),
 										)
 									display.blit(
 										scaled_image_surface,
@@ -428,7 +437,8 @@ class View:
 				if image != None:
 					if (
 						image.state == AbstractStreamedMedia.STATE_READY
-						or image.state == AbstractStreamedMedia.STATE_READY_AND_RELOADING
+						or image.state
+						== AbstractStreamedMedia.STATE_READY_AND_RELOADING
 					):
 
 						peek_width_P = peek_size
@@ -446,7 +456,7 @@ class View:
 								peek_width_P / image.aspect_ratio
 							)
 
-						surface: pygame.surface.Surface = image.get_surface() # type: ignore
+						surface: pygame.surface.Surface = image.get_surface()  # type: ignore
 						if surface != None:
 							scaled_image_surface = pygame.transform.smoothscale(
 								surface, (image_drawing_width_P, image_drawing_height_P)
@@ -454,7 +464,9 @@ class View:
 							display.blit(
 								scaled_image_surface,
 								(
-									current_screen_x_PL + spot_width_P + (thickness * 2),
+									current_screen_x_PL
+									+ spot_width_P
+									+ (thickness * 2),
 									current_screen_y_PL,
 								),
 							)
@@ -474,3 +486,6 @@ class View:
 							thickness,
 							thickness,
 						)
+
+	def set_history_tour(self, history_tour):
+		self.selection.set_history_tour(history_tour)

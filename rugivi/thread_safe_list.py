@@ -32,7 +32,7 @@
 from threading import Lock
 
 
-class ThreadSafeList():
+class ThreadSafeList:
 	def __init__(self):
 		self._list = list()
 		self._lock = Lock()

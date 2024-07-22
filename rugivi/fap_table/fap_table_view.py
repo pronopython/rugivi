@@ -32,7 +32,7 @@
 import pygame
 from rugivi.fap_table.fap_table import FapTable
 from rugivi.image_service.streamed_image import StreamedImage
-from rugivi.image_service.image_server import *
+from rugivi.image_service.abstract_streamed_media import AbstractStreamedMedia
 
 
 class FapTableView:
@@ -83,9 +83,6 @@ class FapTableView:
 			image.state == StreamedImage.STATE_READY
 			or image.state == StreamedImage.STATE_READY_AND_RELOADING
 		):
-			real_x1 = int((card.x * self.real_w) + self.real_x)
-			real_y1 = int((card.y * self.real_w) + self.real_y)
-
 			real_x2 = int(((card.x + card.width) * self.real_w) + self.real_x)
 			real_y2 = int(
 				((card.y + (card.width * card.image.aspect_ratio)) * self.real_w)
@@ -125,7 +122,7 @@ class FapTableView:
 						((card.y + (card.width * image.aspect_ratio)) * w) + y
 					)
 
-					surface : pygame.surface.Surface = image.get_surface() # type: ignore
+					surface: pygame.surface.Surface = image.get_surface()  # type: ignore
 					cat2 = pygame.transform.scale(
 						surface, (real_x2 - real_x1, real_y2 - real_y1)
 					)

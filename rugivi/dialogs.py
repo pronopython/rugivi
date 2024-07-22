@@ -31,7 +31,8 @@
 
 
 import abc
-from tkinter import Button, Menu, Misc, Text, Tk
+from tkinter import Menu
+from tkinter import Text
 from tkinter import Label
 from tkinter import Entry
 import tkinter.simpledialog
@@ -98,7 +99,9 @@ class TkinterRightClick:
 
 	def bind_textmenu(self):
 		# to be called AFTER all Entry + Text elements are placed
-		self.root.bind_class("Entry", "<Button-3><ButtonRelease-3>", self._show_textmenu)
+		self.root.bind_class(
+			"Entry", "<Button-3><ButtonRelease-3>", self._show_textmenu
+		)
 		self.root.bind_class("Text", "<Button-3><ButtonRelease-3>", self._show_textmenu)
 
 

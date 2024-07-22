@@ -33,9 +33,12 @@ import configparser
 import os
 import pathlib
 import sys
+from typing import NoReturn
 
+from rugivi.landmarks.tour import Tour
 from rugivi.rugivi_configurator import ConfigApp
 
+import pkg_resources
 
 # Import pygame, hide welcome message because it messes with
 # status output
@@ -54,20 +57,21 @@ import math
 import psutil
 import random
 
-from rugivi.image_service.image_server import *
+from rugivi.image_service.image_server import ImageServer
 from rugivi.image_service.streamed_image import StreamedImage
 
-from rugivi.status import *
-from rugivi.world_things.world import *
+from rugivi.status import Status
+from rugivi.world_things.world import World
 
-from rugivi.world_database_service.world_database import *
-from rugivi.dialogs import *
-from rugivi.view import *
-from rugivi.fap_table.fap_table_manager import *
-from rugivi.fap_table.fap_table_view import *
-from rugivi.fap_table.fap_table import *
-from rugivi.fap_table.fap_tables import *
-from rugivi.selection import *
+from rugivi.dialogs import Dialog_xy
+from rugivi.dialogs import Dialog_save_file
+from rugivi.dialogs import Dialog_copy_clipboard
+from rugivi.view import View
+from rugivi.fap_table.fap_table_manager import FapTableManager
+from rugivi.fap_table.fap_table_view import FapTableView
+from rugivi.fap_table.fap_table import FapTable
+from rugivi.fap_table.fap_table import FapTableCard
+from rugivi.fap_table.fap_tables import FapTables
 from rugivi.exports.world_overlook import WorldOverlook
 
 import platform
@@ -75,11 +79,10 @@ import subprocess
 
 import getopt  # commandline arg handler
 
-import tkinter
-from tkinter import messagebox
-
 from rugivi import config_file_handler as config_file_handler
 from rugivi import dir_helper as dir_helper
+
+from time import time
 
 
 class RugiviMainApp:
@@ -110,7 +113,7 @@ class RugiviMainApp:
 		self.configured = False
 
 		while not self.configured:
-			self.configured = dir_helper.is_config_file_present("RuGiVi","rugivi.conf")
+			self.configured = dir_helper.is_config_file_present("RuGiVi", "rugivi.conf")
 
 			if self.configured:
 				self.configDir = dir_helper.get_config_dir("RuGiVi")
@@ -119,26 +122,19 @@ class RugiviMainApp:
 				)
 
 				try:
-					self.configured = self.configured and self.configParser.get_boolean("configuration", "configured")
+					self.configured = self.configured and self.configParser.get_boolean(
+						"configuration", "configured"
+					)
 				except configparser.NoSectionError:
 					self.configured = False
 
 			if not self.configured and configurator_run:
-				sys.exit() # Cancel was pressed in configurator
+				sys.exit()  # Cancel was pressed in configurator
 
 			if not self.configured and not configurator_run:
-				#root = tkinter.Tk()
-				#root.withdraw()
-				#messagebox.showinfo(
-				#	"Not configured",
-				#	"Please configure RuGiVi and apply the settings in the following dialog.",
-				#)
-
 				app = ConfigApp(apply_and_start=True)
 				app.run()
-
 				configurator_run = True
-
 
 		self.worldDbFile = self.configParser.get_directory_path(
 			"world", "worldDB", self.worldDbFile
@@ -176,7 +172,9 @@ class RugiviMainApp:
 		self.cross_shape_grow = self.configParser.get_boolean("world", "crossshapegrow")
 		self.no_diagonal_grow = self.configParser.get_boolean("world", "nodiagonalgrow")
 		self.organic_grow = self.configParser.get_boolean("world", "organicgrow")
-		self.reach_out_ant_mode = self.configParser.get_boolean("world", "reachoutantmode")
+		self.reach_out_ant_mode = self.configParser.get_boolean(
+			"world", "reachoutantmode"
+		)
 
 		self.vlc_binary = self.configParser.get("videoplayback", "vlcbinary")
 		self.video_crawl_enabled = self.configParser.get_boolean("world", "crawlvideos")
@@ -186,22 +184,17 @@ class RugiviMainApp:
 		self.video_vlc_seek_position = self.configParser.get_boolean(
 			"videoplayback", "vlcseekposition"
 		)
-		self.debug_vlc_verbose = self.configParser.get_boolean(
-			"debug", "vlcverbose"
-		)
-		self.debug_cv2_verbose = self.configParser.get_boolean(
-			"debug", "cv2verbose"
-		)
-		self.debug_mockupimages = self.configParser.get_boolean(
-			"debug", "mockupimages"
-		)
+		self.debug_vlc_verbose = self.configParser.get_boolean("debug", "vlcverbose")
+		self.debug_cv2_verbose = self.configParser.get_boolean("debug", "cv2verbose")
+		self.debug_mockupimages = self.configParser.get_boolean("debug", "mockupimages")
 
 		if not self.debug_cv2_verbose:
 			# prevent open cv error messages when video files make problems
-			os.environ['OPENCV_LOG_LEVEL'] = 'OFF'
-			os.environ['OPENCV_FFMPEG_LOGLEVEL'] = "-8"
+			os.environ["OPENCV_LOG_LEVEL"] = "OFF"
+			os.environ["OPENCV_FFMPEG_LOGLEVEL"] = "-8"
 
-		self.video_still_generator_jpg_quality = self.configParser.get_int("videoframe", "jpgquality"
+		self.video_still_generator_jpg_quality = self.configParser.get_int(
+			"videoframe", "jpgquality"
 		)
 		self.video_still_generator_resize_enabled = self.configParser.get_boolean(
 			"videoframe", "maxsizeenabled"
@@ -212,7 +205,6 @@ class RugiviMainApp:
 		self.video_still_generator_remove_letterbox = self.configParser.get_boolean(
 			"videoframe", "removeletterbox"
 		)
-
 
 	def parseCommandlineArgs(self) -> None:
 		try:
@@ -246,18 +238,24 @@ class RugiviMainApp:
 	def open_video_with_vlc(self, path, position: float = 0.0):
 		if position > 2:
 			position -= 2
-		# position_str = "--start-time=" + str(math.floor(position))
 		position_str = "--start-time=" + str(position)
 		if not self.debug_vlc_verbose:
-			p = subprocess.Popen([self.vlc_binary, position_str, path],shell=False,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL )
+			subprocess.Popen(
+				[self.vlc_binary, position_str, path],
+				shell=False,
+				stdout=subprocess.DEVNULL,
+				stderr=subprocess.DEVNULL,
+			)
 		else:
-			p = subprocess.Popen([self.vlc_binary, position_str, path])
+			subprocess.Popen([self.vlc_binary, position_str, path])
 
 	def run(self) -> NoReturn:
 
 		pygame.init()
 
-		pygame.display.set_caption("RuGiVi")
+		self.version = pkg_resources.get_distribution(__package__).version
+		print("Version:", self.version)
+		pygame.display.set_caption("RuGiVi" + " " + self.version)
 
 		icon = pygame.image.load(dir_helper.get_install_dir() + "/icon.png")
 		pygame.display.set_icon(icon)
@@ -266,12 +264,21 @@ class RugiviMainApp:
 			self.size, pygame.RESIZABLE | pygame.HWSURFACE | pygame.DOUBLEBUF
 		)
 
-		self.image_server = ImageServer(32, self.thumbDbFile, self.cache_base_dir, number_of_video_conduits = 8)
+		self.image_server = ImageServer(
+			32, self.thumbDbFile, self.cache_base_dir, number_of_video_conduits=8
+		)
 		# reconfigure video still generatorl
-		self.image_server.video_still_generator.jpg_quality=self.video_still_generator_jpg_quality
+		self.image_server.video_still_generator.jpg_quality = (
+			self.video_still_generator_jpg_quality
+		)
 		if self.video_still_generator_resize_enabled:
-			self.image_server.video_still_generator.max_dimension=(self.video_still_generator_max_dimension,self.video_still_generator_max_dimension)
-		self.image_server.video_still_generator.remove_letterbox=self.video_still_generator_remove_letterbox
+			self.image_server.video_still_generator.max_dimension = (
+				self.video_still_generator_max_dimension,
+				self.video_still_generator_max_dimension,
+			)
+		self.image_server.video_still_generator.remove_letterbox = (
+			self.video_still_generator_remove_letterbox
+		)
 
 		self.world = World()
 
@@ -283,7 +290,8 @@ class RugiviMainApp:
 			World.SPOT_SIZE
 			/ ImageServer.QUALITY_PIXEL_SIZE[StreamedImage.QUALITY_THUMB]
 		)
-		view : View = View(self.world, initial_height)
+
+		view: View = View(self.world, initial_height)
 
 		fap_table_view = FapTableView()
 
@@ -323,10 +331,10 @@ class RugiviMainApp:
 			crawl_videos=self.video_crawl_enabled,
 			excludeDirList=self.excludeDirList,
 			mockup_mode=self.debug_mockupimages,
-			cross_shape_grow = self.cross_shape_grow,
-			no_diagonal_grow = self.no_diagonal_grow,
-			organic_grow = self.organic_grow,
-			reach_out_ant_mode = self.reach_out_ant_mode,
+			cross_shape_grow=self.cross_shape_grow,
+			no_diagonal_grow=self.no_diagonal_grow,
+			organic_grow=self.organic_grow,
+			reach_out_ant_mode=self.reach_out_ant_mode,
 		)
 		self.crawler.run()
 
@@ -345,6 +353,15 @@ class RugiviMainApp:
 
 		self.world_overlook = None
 		self.save_dialog = None
+
+		history_tour = Tour(
+			"##history_view_1##",
+			insert_deletes_right_side=True,
+			max_entries=500,
+			do_not_add_same_spot=True,
+		)
+
+		view.set_history_tour(history_tour)
 
 		while self.running:
 			info = pygame.display.Info()
@@ -454,7 +471,7 @@ class RugiviMainApp:
 								clicked_spot_y_S -= 1
 							view.selection.x_S = clicked_spot_x_S
 							view.selection.y_S = clicked_spot_y_S
-							view.selection.update_selected_spot()
+							view.selection.update_selected_spot(update_history=True)
 							redraw = True
 
 							selection_clock.tick()
@@ -500,7 +517,7 @@ class RugiviMainApp:
 									clicked_spot_y_S -= 1
 								view.selection.x_S = clicked_spot_x_S
 								view.selection.y_S = clicked_spot_y_S
-								view.selection.update_selected_spot()
+								view.selection.update_selected_spot(update_history=True)
 								redraw = True
 
 								selection_clock.tick()
@@ -664,29 +681,72 @@ class RugiviMainApp:
 									)
 									video_position = float(view.selection.image.get_extended_attribute("video_position"))  # type: ignore
 									infotext = infotext + "Video file:\n"
-									infotext = infotext + video_filename + "\n" # type: ignore
-									infotext = infotext + "Parent directory of video file:\n"
-									infotext = infotext + str(pathlib.Path(video_filename).parent.resolve()) + "\n" # type: ignore
+									infotext = infotext + video_filename + "\n"  # type: ignore
+									infotext = (
+										infotext + "Parent directory of video file:\n"
+									)
+									infotext = infotext + str(pathlib.Path(video_filename).parent.resolve()) + "\n"  # type: ignore
 									infotext = infotext + "Position (sec):\n"
 									infotext = infotext + str(video_position) + "\n"
 									infotext = infotext + "Still image in cache:\n"
-									infotext = infotext + view.selection.image.original_file_path + "\n"
-									infotext = infotext + "Parent directory of still image in cache:\n"
-									infotext = infotext + str(pathlib.Path(view.selection.image.original_file_path).parent.resolve()) + "\n" # type: ignore
+									infotext = (
+										infotext
+										+ view.selection.image.original_file_path
+										+ "\n"
+									)
+									infotext = (
+										infotext
+										+ "Parent directory of still image in cache:\n"
+									)
+									infotext = (
+										infotext
+										+ str(
+											pathlib.Path(
+												view.selection.image.original_file_path
+											).parent.resolve()
+										)
+										+ "\n"
+									)
 								else:
 									infotext = infotext + "Image file:\n"
-									infotext = infotext + view.selection.get_selected_file() + "\n"
-									infotext = infotext + "Parent directory of image file:\n"
-									infotext = infotext + str(pathlib.Path(view.selection.get_selected_file()).parent.resolve()) + "\n" # type: ignore
+									infotext = (
+										infotext
+										+ str(view.selection.get_selected_file())
+										+ "\n"
+									)
+									infotext = (
+										infotext + "Parent directory of image file:\n"
+									)
+									infotext = (
+										infotext
+										+ str(
+											pathlib.Path(
+												str(view.selection.get_selected_file())
+											).parent.resolve()
+										)
+										+ "\n"
+									)
 
-								infotext = infotext +"Selected Spot:\n"
+								infotext = infotext + "Selected Spot:\n"
 								infotext = infotext + str(view.selection.x_S)
 								infotext = infotext + ","
 								infotext = infotext + str(view.selection.y_S) + "\n"
-								infotext = infotext + "Ordered Quality: " + str(view.selection.image.get_ordered_quality()) + ", Available Quality: " + str(view.selection.image.get_available_quality()) + "\n"
-								infotext = infotext + "State: " + view.selection.image.state + "\n"
+								infotext = (
+									infotext
+									+ "Ordered Quality: "
+									+ str(view.selection.image.get_ordered_quality())
+									+ ", Available Quality: "
+									+ str(view.selection.image.get_available_quality())
+									+ "\n"
+								)
+								infotext = (
+									infotext
+									+ "State: "
+									+ view.selection.image.state
+									+ "\n"
+								)
 
-							clipboard_dialog = Dialog_copy_clipboard("Info about selection",infotext)
+							Dialog_copy_clipboard("Info about selection", infotext)
 					elif event.key == pygame.K_j:
 						last_x_S = math.floor(
 							view.current_center_world_pos_x_P / World.SPOT_SIZE
@@ -718,7 +778,45 @@ class RugiviMainApp:
 						view.current_center_world_pos_y_P = (
 							last_y_S * World.SPOT_SIZE + int(World.SPOT_SIZE / 2)
 						)
+						view.selection.x_S = last_x_S
+						view.selection.y_S = last_y_S
+						view.selection.update_selected_spot(update_history=True)
 						redraw = True
+
+					elif event.key == pygame.K_f:
+						view.selection.history_tour.go_forward()
+						if view.selection.history_tour.has_pois():
+							(
+								x_S,
+								y_S,
+							) = view.selection.history_tour.get_current_poi().position
+							view.selection.x_S = x_S
+							view.selection.y_S = y_S
+							if not view.selection.is_visible():
+								view.current_center_world_pos_x_P = (
+									x_S * World.SPOT_SIZE + int(World.SPOT_SIZE / 2)
+								)
+								view.current_center_world_pos_y_P = (
+									y_S * World.SPOT_SIZE + int(World.SPOT_SIZE / 2)
+								)
+							redraw = True
+					elif event.key == pygame.K_b:
+						view.selection.history_tour.go_back()
+						if view.selection.history_tour.has_pois():
+							(
+								x_S,
+								y_S,
+							) = view.selection.history_tour.get_current_poi().position
+							view.selection.x_S = x_S
+							view.selection.y_S = y_S
+							if not view.selection.is_visible():
+								view.current_center_world_pos_x_P = (
+									x_S * World.SPOT_SIZE + int(World.SPOT_SIZE / 2)
+								)
+								view.current_center_world_pos_y_P = (
+									y_S * World.SPOT_SIZE + int(World.SPOT_SIZE / 2)
+								)
+							redraw = True
 
 					elif event.key == pygame.K_n:
 						if view.selection.get_selected_file() != None:
@@ -816,6 +914,9 @@ class RugiviMainApp:
 				view.current_center_world_pos_y_P = xy_dialog.result[
 					1
 				] * World.SPOT_SIZE + int(World.SPOT_SIZE / 2)
+				view.selection.x_S = xy_dialog.result[0]
+				view.selection.y_S = xy_dialog.result[1]
+				view.selection.update_selected_spot(update_history=True)
 				xy_dialog = None
 
 			if self.save_dialog != None and self.save_dialog.result != None:
@@ -846,7 +947,7 @@ class RugiviMainApp:
 
 				view.selection.x_S = clicked_spot_x_S
 				view.selection.y_S = clicked_spot_y_S
-				view.selection.update_selected_spot()
+				view.selection.update_selected_spot(update_history=True)
 
 				# and switch off peek, when selection moves by itself
 				view.selection.peek_enabled = False
@@ -954,7 +1055,8 @@ class RugiviMainApp:
 			if (
 				self.image_server._total_database_loaded
 				+ self.image_server._total_disk_loaded
-				< 10 and not self.debug_mockupimages
+				< 10
+				and not self.debug_mockupimages
 			):
 
 				font = pygame.font.SysFont("monospace", 40)
@@ -963,7 +1065,6 @@ class RugiviMainApp:
 				mp = int(time() % 4)
 				label2 = font.render((" " * mp) + ".", True, (255, 80, 207))
 				self.display.blit(label2, (30, 80))
-				# pygame.display.flip()
 
 			if self.running == False:
 				self.display.fill((100, 100, 100, 0))
@@ -986,7 +1087,6 @@ class RugiviMainApp:
 			clock.tick(80)  # limits fps
 
 		font = pygame.font.SysFont("monospace", 50)
-		# label = font.render(".", 1, (0, 0, 0))
 		label = font.render(".", True, (0, 0, 0))
 		self.display.blit(label, (30, 80))
 		pygame.display.flip()

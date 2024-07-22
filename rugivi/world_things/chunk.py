@@ -45,7 +45,9 @@ class Chunk:
 		self._spots_matrix = numpy.empty(
 			(AbstractWorld.CHUNK_SIZE, AbstractWorld.CHUNK_SIZE), dtype=object
 		)
-		self._number_of_empty_spots = AbstractWorld.CHUNK_SIZE * AbstractWorld.CHUNK_SIZE
+		self._number_of_empty_spots = (
+			AbstractWorld.CHUNK_SIZE * AbstractWorld.CHUNK_SIZE
+		)
 		self.world = world
 		self.x_C = x_C
 		self.y_C = y_C
@@ -75,7 +77,9 @@ class Chunk:
 		return self._number_of_empty_spots
 
 	def count_used_spots(self) -> int:
-		return (AbstractWorld.CHUNK_SIZE * AbstractWorld.CHUNK_SIZE) - self._number_of_empty_spots
+		return (
+			AbstractWorld.CHUNK_SIZE * AbstractWorld.CHUNK_SIZE
+		) - self._number_of_empty_spots
 
 	def is_empty(self) -> bool:
 		return self.count_used_spots() == 0

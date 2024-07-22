@@ -33,10 +33,9 @@ import abc
 from rugivi.world_things.chunk import Chunk
 
 
-
 class AbstractWorldDatabase:
-    __metaclass__ = abc.ABCMeta
-	
-    @abc.abstractmethod
-    def get_chunk_at_C(self, x_C,y_C) -> Chunk : # type: ignore
-        pass
+	__metaclass__ = abc.ABCMeta
+
+	@abc.abstractmethod
+	def get_chunk_at_C(self, x_C, y_C) -> Chunk:  # type: ignore
+		pass
